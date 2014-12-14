@@ -3,7 +3,7 @@
  */
 
 BezierSegment seedLine0, seedLine1;
-LineSegment controlLine0, controlLine1;
+BezierSegment controlLine0, controlLine1;
 
 int numSegments;
 
@@ -25,9 +25,12 @@ void draw() {
   
   seedLine0.drawControl(g);
   seedLine1.drawControl(g);
-  ;
+
   controlLine0.draw(g);
   controlLine1.draw(g);
+
+  controlLine0.drawControl(g);
+  controlLine1.drawControl(g);
   
   stroke(255);
   noFill();
@@ -38,8 +41,8 @@ void draw() {
     m0 = seedLine0.getPointOnCurve(t);
     m1 = seedLine1.getPointOnCurve(t);
     
-    cm0 = controlLine0.getPointOnLine(t);
-    cm1 = controlLine1.getPointOnLine(t);
+    cm0 = controlLine0.getPointOnCurve(t);
+    cm1 = controlLine1.getPointOnCurve(t);
     
     bezier(m0.x, m0.y, cm0.x, cm0.y,
       cm1.x, cm1.y, m1.x, m1.y);
@@ -58,11 +61,17 @@ void regenerateSeedLines() {
     random(1) * width/2, random(1) * height/2 + height/2,
     random(1) * width/2 + width/2, random(1) * height/2 + height/2,
     random(1) * width/2 + width/2, random(1) * height/2 + height/2);
-  controlLine0 = new LineSegment(
+    
+  controlLine0 = new BezierSegment(
     random(1) * width/2, random(1) * height/2,
+    random(1) * width/2, random(1) * height/2,
+    random(1) * width/2 + width/2, random(1) * height/2,
     random(1) * width/2 + width/2, random(1) * height/2);
-  controlLine1 = new LineSegment(
+
+  controlLine1 = new BezierSegment(
     random(1) * width/2, random(1) * height/2 + height/2,
+    random(1) * width/2, random(1) * height/2 + height/2,
+    random(1) * width/2 + width/2, random(1) * height/2 + height/2,
     random(1) * width/2 + width/2, random(1) * height/2 + height/2);
 }
 
