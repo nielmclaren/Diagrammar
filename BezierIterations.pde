@@ -15,13 +15,11 @@ void setup() {
 }
 
 void draw() {
-  background(102);
-  stroke(255);
+  background(255);
+  stroke(246);
   
   seedLine0.draw(g);
   seedLine1.draw(g);
-  
-  stroke(128);
   
   seedLine0.drawControl(g);
   seedLine1.drawControl(g);
@@ -32,7 +30,7 @@ void draw() {
   controlLine0.drawControl(g);
   controlLine1.drawControl(g);
   
-  stroke(255);
+  stroke(64);
   noFill();
   
   PVector m0, m1, cm0, cm1;
@@ -75,6 +73,10 @@ void regenerateSeedLines() {
     random(1) * width/2 + width/2, random(1) * height/2 + height/2);
 }
 
-void mouseReleased() {
-  regenerateSeedLines();
+void keyReleased() {
+  switch (key) {
+    case ' ':
+      regenerateSeedLines();
+      break;
+  }
 }
