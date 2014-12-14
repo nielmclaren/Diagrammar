@@ -78,5 +78,9 @@ void keyReleased() {
     case ' ':
       regenerateSeedLines();
       break;
+      
+    case 'r':
+      save("render.png");
+      break;
   }
 }
