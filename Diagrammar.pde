@@ -1,8 +1,6 @@
-/**
- * Draws a bunch of line segments between two line segments.
- */
 
-BezierSequence bs;
+BezierCurve curve;
+PVector mousePressedPoint;
 
 boolean showControls;
 
@@ -10,7 +8,7 @@ void setup() {
   size(800, 600);
   frameRate(20);
 
-  regenerateSeedLines();
+  curve = new BezierCurve();
 
   showControls = false;
 }
@@ -22,41 +20,20 @@ void draw() {
     noFill();
     stroke(128);
 
-    bs.drawControls(this.g);
+    curve.drawControls(this.g);
   }
 
   noFill();
   stroke(64);
 
-  bs.draw(this.g);
-}
-
-void regenerateSeedLines() {
-  BezierSegment seedLine0 = new BezierSegment(
-    random(1) * width/2, random(1) * height/2,
-    random(1) * width/2, random(1) * height/2,
-    random(1) * width/2 + width/2, random(1) * height/2,
-    random(1) * width/2 + width/2, random(1) * height/2);
-
-  BezierSegment seedLine1 = new BezierSegment(
-    random(1) * width/2, random(1) * height/2 + height/2,
-    random(1) * width/2, random(1) * height/2 + height/2,
-    random(1) * width/2 + width/2, random(1) * height/2 + height/2,
-    random(1) * width/2 + width/2, random(1) * height/2 + height/2);
-
-  BezierSegment controlLine0 = new BezierSegment(
-    random(1) * width/2, random(1) * height/2,
-    random(1) * width/2, random(1) * height/2,
-    random(1) * width/2 + width/2, random(1) * height/2,
-    random(1) * width/2 + width/2, random(1) * height/2);
-
-  BezierSegment controlLine1 = new BezierSegment(
-    random(1) * width/2, random(1) * height/2 + height/2,
-    random(1) * width/2, random(1) * height/2 + height/2,
-    random(1) * width/2 + width/2, random(1) * height/2 + height/2,
-    random(1) * width/2 + width/2, random(1) * height/2 + height/2);
-
-  bs = new BezierSequence(30, seedLine0, seedLine1, controlLine0, controlLine1);
+  curve.draw(this.g);
+  
+  if (curve.numSegments() > 0) {
+    for (int i = 0; i < 16; i++) {
+      PVector p = curve.getPointOnCurve(i / 16.0);
+      ellipse(p.x, p.y, 2 * i, 2 * i);
+    }
+  }
 }
 
 void keyReleased() {
@@ -65,12 +42,17 @@ void keyReleased() {
       showControls = !showControls;
       break;
 
-    case ' ':
-      regenerateSeedLines();
-      break;
-
     case 'r':
       save("render.png");
       break;
   }
+}
+
+void mousePressed() {
+  mousePressedPoint = new PVector(mouseX, mouseY);
+}
+
+void mouseReleased() {
+  curve.addControl(new LineSegment(
+    mousePressedPoint.x, mousePressedPoint.y, mouseX, mouseY));
 }
