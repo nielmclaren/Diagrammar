@@ -2,11 +2,15 @@
 BezierCurve curve;
 ArrayList<LineSegment> controls;
 
+int POLYLINE_POINTS_PER_CONTROL = 8;
+float UAD_POINTS_PER_PIXEL = 0.025;
+
 int numPolylinePoints;
 PVector[] polylinePoints;
 
 int numUadPoints;
 PVector[] uadPoints; // uniform arc-distance
+PVector[] timeInterpolatedPoints;
 
 PVector mousePressedPoint;
 
@@ -20,8 +24,7 @@ void setup() {
   controls = new ArrayList<LineSegment>();
 
   showControls = false;
-  //*
-  // NOCOMMIT
+
   LineSegment line;
   
   line = new LineSegment(111.0, 547.0, 86.0, 40.0);
@@ -32,7 +35,11 @@ void setup() {
   curve.addControl(line);
   controls.add(line);
   recalculate();
-  //*/
+  
+  line = new LineSegment(253.0, 159.0, 696.0, 433.0);
+  curve.addControl(line);
+  controls.add(line);
+  recalculate();
 }
 
 void draw() {
@@ -80,6 +87,17 @@ void draw() {
     PVector p0;
     for (int i = 0; i < numUadPoints; i++) {
       p0 = uadPoints[i];
+      ellipse(p0.x, p0.y, 4, 4);
+    }
+  }
+  
+  noFill();
+  stroke(64);
+  
+  if (curve.numSegments() > 0) {
+    PVector p0;
+    for (int i = 0; i < numUadPoints; i++) {
+      p0 = timeInterpolatedPoints[i];
       ellipse(p0.x, p0.y, 8, 8);
     }
   }
@@ -106,6 +124,8 @@ void mouseReleased() {
   curve.addControl(line);
   controls.add(line);
   recalculate();
+  
+  println(line.p0.x + ", " + line.p0.y + ", " + line.p1.x + ", " + line.p1.y);
 }
 
 
@@ -114,8 +134,10 @@ private void recalculate() {
   if (controls.size() < 2) return;
   println("START recalculate");
   
-  numPolylinePoints = controls.size() * 8;
+  numPolylinePoints = controls.size() * POLYLINE_POINTS_PER_CONTROL;
   polylinePoints = new PVector[numPolylinePoints];
+  int[] polylineControlIndices = new int[numPolylinePoints];
+  float[] polylineTimes = new float[numPolylinePoints];
   float[] polylineLengths = new float[numPolylinePoints];
   float[] polylineDistances = new float[numPolylinePoints];
   float polylineLength = 0;
@@ -124,7 +146,9 @@ private void recalculate() {
   println("index\tlength\tdistance");
   
   for (int i = 0; i < numPolylinePoints; i++) {
-    polylinePoints[i] = getPointOnCurveNaive((float)i / (numPolylinePoints - 1));
+    polylineTimes[i] = (float)i / (numPolylinePoints - 1);
+    polylinePoints[i] = getPointOnCurveNaive(polylineTimes[i]);
+    polylineControlIndices[i] = getPointOnCurveNaiveIndex(polylineTimes[i]);
     
     if (i > 0) {
       PVector d = polylinePoints[i].get();
@@ -136,23 +160,43 @@ private void recalculate() {
       println(i + "\t" + d.mag() + "\t" + polylineLength);
     }
     else {
+      polylineLengths[i] = 0;
       polylineDistances[i] = 0;
     }
   }
   
-  numUadPoints = floor(polylineLength * 0.025);
+  numUadPoints = floor(polylineLength * UAD_POINTS_PER_PIXEL);
   uadPoints = new PVector[numUadPoints];
+  timeInterpolatedPoints = new PVector[numUadPoints];
   float walkLength = polylineLength / (numUadPoints - 1);
   int polylinePointIndex = 0;
   
   println("numUadPoints=" + numUadPoints + ", walkLength=" + walkLength);
   
+    println((polylinePointIndex)
+      + "\t" + polylineLengths[polylinePointIndex]
+      + "\t" + polylineDistances[polylinePointIndex]
+      + "\tN/A"
+      + "\t" + polylineTimes[polylinePointIndex]);
+      
   for (int i = 0; i < numUadPoints; i++) {
     println("UAD Point: " + i);
-    println((polylinePointIndex+1) + "\t" + polylineLengths[polylinePointIndex+1] + "\t" + polylineDistances[polylinePointIndex+1] + "\t" + (i * walkLength));
-    while (i * walkLength > polylineDistances[polylinePointIndex + 1]) {
+    println((polylinePointIndex+1)
+      + "\t" + polylineLengths[polylinePointIndex+1]
+      + "\t" + polylineDistances[polylinePointIndex+1]
+      + "\t" + (i * walkLength)
+      + "\t" + polylineTimes[polylinePointIndex+1]);
+    while (polylinePointIndex + 2 < numPolylinePoints
+        && i * walkLength > polylineDistances[polylinePointIndex + 1]) {
       polylinePointIndex++;
-      println((polylinePointIndex+1) + "\t" + polylineLengths[polylinePointIndex+1] + "\t" + polylineDistances[polylinePointIndex+1] + "\t" + (i * walkLength));
+      
+      if (polylinePointIndex + 1 < numPolylinePoints) {
+        println((polylinePointIndex+1)
+          + "\t" + polylineLengths[polylinePointIndex+1]
+          + "\t" + polylineDistances[polylinePointIndex+1]
+          + "\t" + (i * walkLength)
+          + "\t" + polylineTimes[polylinePointIndex+1]);
+      }
     }
     
     if (polylinePointIndex >= numPolylinePoints) {
@@ -167,7 +211,11 @@ private void recalculate() {
       d.add(polylinePoints[polylinePointIndex]);
       uadPoints[i] = d;
       
-      println("\t" + d);
+      float k = (i * walkLength - polylineDistances[polylinePointIndex]) / polylineLengths[polylinePointIndex+1];
+      float t = polylineTimes[polylinePointIndex] + k * (polylineTimes[polylinePointIndex+1] - polylineTimes[polylinePointIndex]);
+      println("k=" + k + ", t=" + t);
+      
+      timeInterpolatedPoints[i] = getPointOnCurveNaive(t);
     }
   }
   
@@ -185,6 +233,12 @@ private float bezierInterpolation(float a, float b, float c, float d, float t) {
   + (3 * b + t * (-6 * b + b * 3 * t)) * t
   + (c * 3 - c * 3 * t) * t2
   + d * t3;
+}
+
+private int getPointOnCurveNaiveIndex(float t) {
+  int len = controls.size() - 1;
+  int index = floor(t * len);
+  return index;
 }
 
 private PVector getPointOnCurveNaive(float t) {
