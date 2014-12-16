@@ -101,6 +101,26 @@ void draw() {
       ellipse(p0.x, p0.y, 8, 8);
     }
   }
+  
+  noFill();
+  noStroke();
+  
+  if (curve.numSegments() > 0) {
+    PVector p0, p1, d, m;
+    float dist;
+    for (int i = 0; i < numUadPoints; i++) {
+      p0 = timeInterpolatedPoints[i];
+      p1 = uadPoints[i];
+      d = p1.get();
+      d.sub(p0);
+      dist = d.mag();
+      d.mult(0.5);
+      d.add(p0);
+      
+      fill(255, 0, 0, 10 * dist);
+      ellipse(d.x, d.y, 16, 16);
+    }
+  }
 }
 
 void keyReleased() {
