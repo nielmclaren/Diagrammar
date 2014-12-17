@@ -1,6 +1,14 @@
 
 class BezierCurve {
+  int POLYLINE_POINTS_PER_CONTROL = 100;
+
   ArrayList<LineSegment> controls;
+
+  int numPolylinePoints;
+  float polylineLength;
+  float[] polylineTimes;
+  float[] polylineLengths;
+
 
   BezierCurve() {
     controls = new ArrayList<LineSegment>();
@@ -31,7 +39,7 @@ class BezierCurve {
 
   void addControl(LineSegment control) {
     controls.add(control);
-    recalculateStuff();
+    recalculate();
   }
 
   void drawControls(PGraphics g) {
@@ -47,24 +55,22 @@ class BezierCurve {
   }
 
   PVector getPointOnCurve(float t) {
-    if (controls.size() < 2) return null;
+    if (controls.size() <= 0) return null;
+    if (t <= 0) return controls.get(0).p0.get();
+    if (t >= 1) return controls.get(controls.size() - 1).p1.get();
 
-    // FIXME: Naïve implementation. Should be based on lengths of curves.
-    int len = controls.size() - 1;
-    int index = floor(t * len);
-    float u = (t * len - index);
-    LineSegment line0 = controls.get(index);
-    LineSegment line1 = controls.get(index + 1);
-    if (index == 0) {
-      return new PVector(
-        bezierInterpolation(line0.p0.x, line0.p1.x, line1.p0.x, line1.p1.x, u),
-        bezierInterpolation(line0.p0.y, line0.p1.y, line1.p0.y, line1.p1.y, u));
+    float polylineDistance = 0;
+    for (int i = 0; i < numPolylinePoints - 1; i++) {
+      if (t * polylineLength < polylineDistance + polylineLengths[i]) {
+        float k = (t * polylineLength - polylineDistance) / polylineLengths[i];
+        float u = polylineTimes[i] + k * (polylineTimes[i + 1] - polylineTimes[i]);
+
+        return getPointOnCurveNaive(u);
+      }
+      polylineDistance += polylineLengths[i];
     }
-    else {
-      return new PVector(
-        bezierInterpolation(line0.p1.x, 2 * line0.p1.x - line0.p0.x, line1.p0.x, line1.p1.x, u),
-        bezierInterpolation(line0.p1.y, 2 * line0.p1.y - line0.p0.y, line1.p0.y, line1.p1.y, u));
-    }
+
+    return null;
   }
 
   /**
@@ -80,8 +86,16 @@ class BezierCurve {
     + d * t3;
   }
 
+  private int getPointOnCurveNaiveIndex(float t) {
+    int len = controls.size() - 1;
+    int index = floor(t * len);
+    return index;
+  }
+
   private PVector getPointOnCurveNaive(float t) {
     if (controls.size() < 2) return null;
+    if (t <= 0) return controls.get(0).p0.get();
+    if (t >= 1.0) return controls.get(controls.size() - 1).p1.get();
 
     int len = controls.size() - 1;
     int index = floor(t * len);
@@ -99,7 +113,33 @@ class BezierCurve {
         bezierInterpolation(line0.p1.y, 2 * line0.p1.y - line0.p0.y, line1.p0.y, line1.p1.y, u));
     }
   }
-  
-  private void recalculateStuff() {
+
+  private void recalculate() {
+    if (controls.size() < 2) return;
+
+    numPolylinePoints = controls.size() * POLYLINE_POINTS_PER_CONTROL;
+    PVector[] polylinePoints = new PVector[numPolylinePoints];
+    int[] polylineControlIndices = new int[numPolylinePoints];
+    polylineTimes = new float[numPolylinePoints];
+    polylineLengths = new float[numPolylinePoints - 1];
+    polylineLength = 0;
+    float polylineDistance = 0;
+
+    for (int i = 0; i < numPolylinePoints; i++) {
+      polylineTimes[i] = (float)i / (numPolylinePoints - 1);
+      polylinePoints[i] = getPointOnCurveNaive(polylineTimes[i]);
+      polylineControlIndices[i] = getPointOnCurveNaiveIndex(polylineTimes[i]);
+
+      if (i > 0) {
+        PVector d = polylinePoints[i].get();
+        d.sub(polylinePoints[i - 1]);
+        polylineLengths[i - 1] = d.mag();
+        polylineLength += d.mag();
+        polylineDistance += polylineLength;
+      }
+      else {
+        polylineLengths[i] = 0;
+      }
+    }
   }
 }
