@@ -2,7 +2,7 @@
 BezierCurve curve;
 ArrayList<LineSegment> controls;
 
-int POLYLINE_POINTS_PER_CONTROL = 4;
+int POLYLINE_POINTS_PER_CONTROL = 12;
 float UAD_POINTS_PER_PIXEL = 0.05;
 
 int numPolylinePoints;
@@ -15,6 +15,10 @@ float[] polylineDistances;
 int numUadPoints;
 PVector[] uadPoints; // uniform arc-distance
 PVector[] timeInterpolatedPoints;
+
+float uadPointsLength;
+float[] uadPointTimes;
+float[] uadPointLengths;
 
 PVector mousePressedPoint;
 
@@ -73,7 +77,7 @@ void draw() {
   }
   
   noFill();
-  stroke(128);
+  stroke(196);
   
   if (curve.numSegments() > 0) {
     PVector p0, p1;
@@ -84,10 +88,33 @@ void draw() {
     }
   }
   
+  noFill();
+  stroke(128);
+  
+  if (curve.numSegments() > 0) {
+    PVector p0, p1;
+    for (int i = 1; i < numUadPoints; i++) {
+      p0 = uadPoints[i-1];
+      p1 = uadPoints[i];
+      line(p0.x, p0.y, p1.x, p1.y);
+      ellipse(p0.x, p0.y, 5, 5);
+    }
+  }
+  
+  int numPoints = 10;
+  
+  fill(128);
+  stroke(0);
+  
+  for (int i = 0; i < numPoints; i++) {
+    float t = (float) i / numPoints;
+    PVector p = getPointOnCurveUad(t);
+    ellipse(p.x, p.y, 12, 12);
+  }
+  
   fill(64);
   stroke(0);
   
-  int numPoints = 10;
   for (int i = 0; i < numPoints; i++) {
     float t = (float) i / numPoints;
     PVector p = getPointOnCurve(t);
@@ -163,6 +190,10 @@ private void recalculate() {
   float walkLength = polylineLength / (numUadPoints - 1);
   int polylinePointIndex = 0;
   
+  uadPointsLength = 0;
+  uadPointTimes = new float[numUadPoints];
+  uadPointLengths = new float[numUadPoints];
+  
   println("numUadPoints=" + numUadPoints + ", walkLength=" + walkLength);
   
     println((polylinePointIndex)
@@ -170,7 +201,8 @@ private void recalculate() {
       + "\t" + polylineDistances[polylinePointIndex]
       + "\tN/A"
       + "\t" + polylineTimes[polylinePointIndex]);
-      
+  
+  PVector p = polylinePoints[0].get();
   for (int i = 0; i < numUadPoints; i++) {
     println("UAD Point: " + i);
     println((polylinePointIndex+1)
@@ -196,6 +228,8 @@ private void recalculate() {
       println("Passed the end of the line.");
     }
     else {
+      float len = i * walkLength - polylineDistances[polylinePointIndex];
+      
       PVector d = polylinePoints[polylinePointIndex + 1].get();
       d.sub(polylinePoints[polylinePointIndex]);
       d.normalize();
@@ -207,7 +241,12 @@ private void recalculate() {
       float t = polylineTimes[polylinePointIndex] + k * (polylineTimes[polylinePointIndex+1] - polylineTimes[polylinePointIndex]);
       println("k=" + k + ", t=" + t);
       
+      uadPointsLength += PVector.sub(d, p).mag();
+      uadPointLengths[i] = PVector.sub(d, p).mag();
+      uadPointTimes[i] = t;
       timeInterpolatedPoints[i] = getPointOnCurveNaive(t);
+      
+      p = d;
     }
   }
   
@@ -291,6 +330,27 @@ private PVector getPointOnCurve(float t) {
       return getPointOnCurveNaive(u);
     }
     polylineDistance += polylineLengths[i];
+  }
+  
+  return null;
+}
+
+private PVector getPointOnCurveUad(float t) {
+  // This method is actually a lot worse than working off the polyline directly. Huh.
+  
+  if (controls.size() <= 0) return null;
+  if (t <= 0) return controls.get(0).p0.get();
+  if (t >= 1) return controls.get(controls.size() - 1).p1.get();
+  
+  float distance = 0;
+  for (int i = 0; i < numUadPoints - 1; i++) {
+    if (t * uadPointsLength < distance + uadPointLengths[i]) {
+      float k = (t * uadPointsLength - distance) / uadPointLengths[i];
+      float u = uadPointTimes[i] + k * (uadPointTimes[i + 1] - uadPointTimes[i]);
+      
+      return getPointOnCurveNaive(u);
+    }
+    distance += uadPointLengths[i];
   }
   
   return null;
