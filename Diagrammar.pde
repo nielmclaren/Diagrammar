@@ -90,7 +90,7 @@ void draw() {
   int numPoints = 10;
   for (int i = 0; i < numPoints; i++) {
     float t = (float) i / numPoints;
-    PVector p = getPointOnPolylineApproximation(t);
+    PVector p = getPointOnCurve(t);
     ellipse(p.x, p.y, 12, 12);
   }
 }
@@ -260,9 +260,9 @@ private PVector getPointOnPolylineApproximation(float t) {
   if (t <= 0) return controls.get(0).p0.get();
   if (t >= 1) return controls.get(controls.size() - 1).p1.get();
   
+  float polylineDistance = 0;
   for (int i = 0; i < numPolylinePoints - 1; i++) {
-    if (t * polylineLength < polylineDistances[i + 1]) {
-      
+    if (t * polylineLength < polylineDistance + polylineLengths[i]) {
       PVector p = polylinePoints[i + 1].get();
       p.sub(polylinePoints[i]);
       p.normalize();
@@ -271,6 +271,7 @@ private PVector getPointOnPolylineApproximation(float t) {
       
       return p;
     }
+    polylineDistance += polylineLengths[i];
   }
   
   return null;
@@ -281,13 +282,15 @@ private PVector getPointOnCurve(float t) {
   if (t <= 0) return controls.get(0).p0.get();
   if (t >= 1) return controls.get(controls.size() - 1).p1.get();
   
+  float polylineDistance = 0;
   for (int i = 0; i < numPolylinePoints - 1; i++) {
-    if (t * polylineLength < polylineDistances[i + 1]) {
-      float k = (t * polylineLength - polylineDistances[i]) / polylineLengths[i];
+    if (t * polylineLength < polylineDistance + polylineLengths[i]) {
+      float k = (t * polylineLength - polylineDistance) / polylineLengths[i];
       float u = polylineTimes[i] + k * (polylineTimes[i + 1] - polylineTimes[i]);
       
       return getPointOnCurveNaive(u);
     }
+    polylineDistance += polylineLengths[i];
   }
   
   return null;
