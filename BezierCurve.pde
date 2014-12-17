@@ -12,6 +12,9 @@ class BezierCurve {
 
   BezierCurve() {
     controls = new ArrayList<LineSegment>();
+
+    numPolylinePoints = 0;
+    polylineLength = 0;
   }
 
   void draw(PGraphics g) {
@@ -54,8 +57,15 @@ class BezierCurve {
     }
   }
 
+  float getLength() {
+    if (controls.size() < 2) return 0;
+
+    // FIXME: Use uniform arc-distance points for better accuracy.
+    return polylineLength;
+  }
+
   PVector getPointOnCurve(float t) {
-    if (controls.size() <= 0) return null;
+    if (controls.size() < 2) return null;
     if (t <= 0) return controls.get(0).p0.get();
     if (t >= 1) return controls.get(controls.size() - 1).p1.get();
 
@@ -87,6 +97,7 @@ class BezierCurve {
   }
 
   private int getPointOnCurveNaiveIndex(float t) {
+    if (controls.size() < 1) return -1;
     int len = controls.size() - 1;
     int index = floor(t * len);
     return index;
