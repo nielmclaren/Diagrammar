@@ -2,11 +2,15 @@
 BezierCurve curve;
 ArrayList<LineSegment> controls;
 
-int POLYLINE_POINTS_PER_CONTROL = 8;
-float UAD_POINTS_PER_PIXEL = 0.025;
+int POLYLINE_POINTS_PER_CONTROL = 4;
+float UAD_POINTS_PER_PIXEL = 0.05;
 
 int numPolylinePoints;
 PVector[] polylinePoints;
+float polylineLength;
+float[] polylineTimes;
+float[] polylineLengths;
+float[] polylineDistances;
 
 int numUadPoints;
 PVector[] uadPoints; // uniform arc-distance
@@ -58,13 +62,13 @@ void draw() {
   curve.draw(this.g);
   
   noFill();
-  stroke(196);
+  stroke(128);
   
   if (curve.numSegments() > 0) {
     PVector p0;
     for (int i = 0; i < numPolylinePoints; i++) {
       p0 = polylinePoints[i];
-      ellipse(p0.x, p0.y, 3, 3);
+      ellipse(p0.x, p0.y, 5, 5);
     }
   }
   
@@ -80,46 +84,14 @@ void draw() {
     }
   }
   
-  noFill();
-  stroke(64);
+  fill(64);
+  stroke(0);
   
-  if (curve.numSegments() > 0) {
-    PVector p0;
-    for (int i = 0; i < numUadPoints; i++) {
-      p0 = uadPoints[i];
-      ellipse(p0.x, p0.y, 4, 4);
-    }
-  }
-  
-  noFill();
-  stroke(64);
-  
-  if (curve.numSegments() > 0) {
-    PVector p0;
-    for (int i = 0; i < numUadPoints; i++) {
-      p0 = timeInterpolatedPoints[i];
-      ellipse(p0.x, p0.y, 8, 8);
-    }
-  }
-  
-  noFill();
-  noStroke();
-  
-  if (curve.numSegments() > 0) {
-    PVector p0, p1, d, m;
-    float dist;
-    for (int i = 0; i < numUadPoints; i++) {
-      p0 = timeInterpolatedPoints[i];
-      p1 = uadPoints[i];
-      d = p1.get();
-      d.sub(p0);
-      dist = d.mag();
-      d.mult(0.5);
-      d.add(p0);
-      
-      fill(255, 0, 0, 10 * dist);
-      ellipse(d.x, d.y, 16, 16);
-    }
+  int numPoints = 10;
+  for (int i = 0; i < numPoints; i++) {
+    float t = (float) i / numPoints;
+    PVector p = getPointOnPolylineApproximation(t);
+    ellipse(p.x, p.y, 12, 12);
   }
 }
 
@@ -157,10 +129,10 @@ private void recalculate() {
   numPolylinePoints = controls.size() * POLYLINE_POINTS_PER_CONTROL;
   polylinePoints = new PVector[numPolylinePoints];
   int[] polylineControlIndices = new int[numPolylinePoints];
-  float[] polylineTimes = new float[numPolylinePoints];
-  float[] polylineLengths = new float[numPolylinePoints];
-  float[] polylineDistances = new float[numPolylinePoints];
-  float polylineLength = 0;
+  polylineTimes = new float[numPolylinePoints];
+  polylineLengths = new float[numPolylinePoints - 1];
+  polylineDistances = new float[numPolylinePoints];
+  polylineLength = 0;
   
   println("polyline points");
   println("index\tlength\tdistance");
@@ -173,7 +145,7 @@ private void recalculate() {
     if (i > 0) {
       PVector d = polylinePoints[i].get();
       d.sub(polylinePoints[i - 1]);
-      polylineLengths[i] = d.mag();
+      polylineLengths[i - 1] = d.mag();
       polylineLength += d.mag();
       polylineDistances[i] = polylineLength;
       
@@ -202,7 +174,7 @@ private void recalculate() {
   for (int i = 0; i < numUadPoints; i++) {
     println("UAD Point: " + i);
     println((polylinePointIndex+1)
-      + "\t" + polylineLengths[polylinePointIndex+1]
+      + "\t" + polylineLengths[polylinePointIndex]
       + "\t" + polylineDistances[polylinePointIndex+1]
       + "\t" + (i * walkLength)
       + "\t" + polylineTimes[polylinePointIndex+1]);
@@ -212,7 +184,7 @@ private void recalculate() {
       
       if (polylinePointIndex + 1 < numPolylinePoints) {
         println((polylinePointIndex+1)
-          + "\t" + polylineLengths[polylinePointIndex+1]
+          + "\t" + polylineLengths[polylinePointIndex]
           + "\t" + polylineDistances[polylinePointIndex+1]
           + "\t" + (i * walkLength)
           + "\t" + polylineTimes[polylinePointIndex+1]);
@@ -231,7 +203,7 @@ private void recalculate() {
       d.add(polylinePoints[polylinePointIndex]);
       uadPoints[i] = d;
       
-      float k = (i * walkLength - polylineDistances[polylinePointIndex]) / polylineLengths[polylinePointIndex+1];
+      float k = (i * walkLength - polylineDistances[polylinePointIndex]) / polylineLengths[polylinePointIndex];
       float t = polylineTimes[polylinePointIndex] + k * (polylineTimes[polylinePointIndex+1] - polylineTimes[polylinePointIndex]);
       println("k=" + k + ", t=" + t);
       
@@ -281,4 +253,42 @@ private PVector getPointOnCurveNaive(float t) {
       bezierInterpolation(line0.p1.x, 2 * line0.p1.x - line0.p0.x, line1.p0.x, line1.p1.x, u),
       bezierInterpolation(line0.p1.y, 2 * line0.p1.y - line0.p0.y, line1.p0.y, line1.p1.y, u));
   }
+}
+
+private PVector getPointOnPolylineApproximation(float t) {
+  if (controls.size() <= 0) return null;
+  if (t <= 0) return controls.get(0).p0.get();
+  if (t >= 1) return controls.get(controls.size() - 1).p1.get();
+  
+  for (int i = 0; i < numPolylinePoints - 1; i++) {
+    if (t * polylineLength < polylineDistances[i + 1]) {
+      
+      PVector p = polylinePoints[i + 1].get();
+      p.sub(polylinePoints[i]);
+      p.normalize();
+      p.mult(t * polylineLength - polylineDistances[i]);
+      p.add(polylinePoints[i]);
+      
+      return p;
+    }
+  }
+  
+  return null;
+}
+
+private PVector getPointOnCurve(float t) {
+  if (controls.size() <= 0) return null;
+  if (t <= 0) return controls.get(0).p0.get();
+  if (t >= 1) return controls.get(controls.size() - 1).p1.get();
+  
+  for (int i = 0; i < numPolylinePoints - 1; i++) {
+    if (t * polylineLength < polylineDistances[i + 1]) {
+      float k = (t * polylineLength - polylineDistances[i]) / polylineLengths[i];
+      float u = polylineTimes[i] + k * (polylineTimes[i + 1] - polylineTimes[i]);
+      
+      return getPointOnCurveNaive(u);
+    }
+  }
+  
+  return null;
 }
