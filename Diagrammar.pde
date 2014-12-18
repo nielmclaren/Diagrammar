@@ -56,9 +56,8 @@ void redraw() {
     p = curve.getPointOnCurve((float)focusLineIndex / numFocusLines);
 
     c = colors.get(floor((float)focusLineIndex / numFocusLines * colors.size()));
-    stroke(c, 33);
-    line(p.x, p.y, foc0.x, foc0.y);
-    line(p.x, p.y, foc1.x, foc1.y);
+    drawGradientLine(foc0, p, c);
+    drawGradientLine(foc1, p, c);
 
     focusLineIndex++;
   }
@@ -67,6 +66,22 @@ void redraw() {
   strokeWeight(1);
 
   curve.draw(this.g);
+}
+
+void drawGradientLine(PVector from, PVector to, color c) {
+  PVector prev = from.get(), curr = new PVector(), d = PVector.sub(to, from);
+  float len = d.mag();
+  
+  int count = 20;
+  float t = 0;
+  while (t < 1) {
+    t += random(1) / count;
+    if (t > 1) t = 1;
+    curr.set(from.x + d.x * t, from.y + d.y * t);
+    stroke(c, 50 * max(0, t - 0.2));
+    line(prev.x, prev.y, curr.x, curr.y);
+    prev.set(curr);
+  }
 }
 
 void keyReleased() {
