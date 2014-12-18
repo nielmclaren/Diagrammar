@@ -10,14 +10,10 @@ void setup() {
   curve = new BezierCurve();
 
   colors = new ArrayList<Integer>();
-  colors.add(color(227, 186, 34));
-  colors.add(color(242, 218, 87));
-  colors.add(color(230, 132, 42));
-  colors.add(color(246, 182, 86));
-  colors.add(color(19, 123, 128));
-  colors.add(color(66, 165, 179));
-  colors.add(color(142, 109, 138));
-  colors.add(color(179, 150, 173));
+  colors.add(color(204, 96, 155));
+  colors.add(color(182, 180, 227));
+  colors.add(color(239, 189, 162));
+  colors.add(color(222, 112, 15));
 
   redraw();
 }
@@ -26,37 +22,51 @@ void draw() {
 }
 
 void redraw() {
-  background(255);
+  background(161, 6, 24);
 
   curve = new BezierCurve();
 
   LineSegment line;
 
-  int numSegments = 12;
+  int numSegments = randi(6, 12);
   for (int i = 0; i < numSegments; i++) {
-    line = new LineSegment(
-      width/4 + random(1) * width/2,
-      height/4 + random(1) * height/2,
-      width/4 + random(1) * width/2,
-      height/4 + random(1) * height/2);
+    line = new LineSegment(random(width), random(height), random(width), random(height));
     curve.addControl(line);
   }
 
-  noStroke();
+  noFill();
+  strokeWeight(2);
 
-  float len = curve.getLength();
-  float dist = 0;
-  while (dist < len) {
-    float radius = 3 + random(1) * 12;
-    dist += radius;
-    if (dist > len) break;
-    PVector p = curve.getPointOnCurve(dist / len);
+  color c;
+  float curveLen = curve.getLength();
+  PVector p, foc0 = null, foc1 = null;
+  int numFocusLines = 4096;
 
-    fill((color)(Integer) colors.get(floor(colors.size() * random(1))));
-    ellipse(p.x, p.y, 2 * radius, 2 * radius);
+  float newFocProbability = 0.001;
 
-    dist += radius;
+  int focusLineIndex = 0;
+  while (focusLineIndex < numFocusLines) {
+    if (foc0 == null || random(1) < newFocProbability) {
+      foc0 = new PVector(width * randf(0.25, 0.75), height * randf(0.25, 0.75));
+    }
+    if (foc1 == null || random(1) < newFocProbability) {
+      foc1 = new PVector(width * randf(0.25, 0.75), height * randf(0.25, 0.75));
+    }
+
+    p = curve.getPointOnCurve((float)focusLineIndex / numFocusLines);
+
+    c = colors.get(floor((float)focusLineIndex / numFocusLines * colors.size()));
+    stroke(c, 33);
+    line(p.x, p.y, foc0.x, foc0.y);
+    line(p.x, p.y, foc1.x, foc1.y);
+
+    focusLineIndex++;
   }
+
+  stroke(255, 33);
+  strokeWeight(1);
+
+  curve.draw(this.g);
 }
 
 void keyReleased() {
@@ -69,4 +79,12 @@ void keyReleased() {
       save("render.png");
       break;
   }
+}
+
+float randf(float low, float high) {
+  return low + random(1) * (high - low);
+}
+
+int randi(int low, int high) {
+  return low + floor(random(1) * (high - low));
 }
