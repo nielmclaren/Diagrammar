@@ -1,19 +1,10 @@
 
-BezierCurve curve;
-
-ArrayList<Integer> colors;
+PImage img;
+PixelStepper stepper;
 
 void setup() {
-  size(800, 600);
+  size(1000, 1000);
   frameRate(10);
-
-  curve = new BezierCurve();
-
-  colors = new ArrayList<Integer>();
-  colors.add(color(204, 96, 155));
-  colors.add(color(182, 180, 227));
-  colors.add(color(239, 189, 162));
-  colors.add(color(222, 112, 15));
 
   redraw();
 }
@@ -22,66 +13,61 @@ void draw() {
 }
 
 void redraw() {
-  background(161, 6, 24);
+  background(0);
 
-  curve = new BezierCurve();
+  img = loadImage("NASA_Apollo_17_Lunar_Roving_Vehicle.jpg");
+  stepper = new PixelStepper(img.width, img.height);
 
-  LineSegment line;
-
-  int numSegments = randi(6, 12);
-  for (int i = 0; i < numSegments; i++) {
-    line = new LineSegment(random(width), random(height), random(width), random(height));
-    curve.addControl(line);
+  img.loadPixels();
+  for (int i = 0; i < 100000; i++) {
+    drip(floor(random(1) * img.width), floor(random(1) * img.height));
   }
+  img.updatePixels();
 
-  noFill();
-  strokeWeight(2);
-
-  color c;
-  float curveLen = curve.getLength();
-  PVector p, foc0 = null, foc1 = null;
-  int numFocusLines = 4096;
-
-  float newFocProbability = 0.001;
-
-  int focusLineIndex = 0;
-  while (focusLineIndex < numFocusLines) {
-    if (foc0 == null || random(1) < newFocProbability) {
-      foc0 = new PVector(width * randf(0.25, 0.75), height * randf(0.25, 0.75));
-    }
-    if (foc1 == null || random(1) < newFocProbability) {
-      foc1 = new PVector(width * randf(0.25, 0.75), height * randf(0.25, 0.75));
-    }
-
-    p = curve.getPointOnCurve((float)focusLineIndex / numFocusLines);
-
-    c = colors.get(floor((float)focusLineIndex / numFocusLines * colors.size()));
-    drawGradientLine(foc0, p, c);
-    drawGradientLine(foc1, p, c);
-
-    focusLineIndex++;
-  }
-
-  stroke(255, 33);
-  strokeWeight(1);
-
-  curve.draw(this.g);
+  redrawImage();
 }
 
-void drawGradientLine(PVector from, PVector to, color c) {
-  PVector prev = from.get(), curr = new PVector(), d = PVector.sub(to, from);
-  float len = d.mag();
-  
-  int count = 20;
-  float t = 0;
-  while (t < 1) {
-    t += random(1) / count;
-    if (t > 1) t = 1;
-    curr.set(from.x + d.x * t, from.y + d.y * t);
-    stroke(c, 50 * max(0, t - 0.2));
-    line(prev.x, prev.y, curr.x, curr.y);
-    prev.set(curr);
+void redrawImage() {
+  image(img, 0, 0);
+}
+
+void drip(int x, int y) {
+  int[] p = new int[]{x, y};
+  color c = getColor(p);
+  while (p[0] >= 1 && p[0] < img.width - 1
+      && p[1] >= 1 && p[1] < img.height - 1
+      && dripStep(c, p)) {}
+}
+
+boolean dripStep(color c, int[] p) {
+  int[] s, se, sw;
+  float seSimilarity, swSimilarity;
+
+  setColor(p, c);
+
+  if (similarity(c, getColor(s = stepper.e(p))) > 0.95) {
+    setCoord(p, s);
+    return true;
   }
+
+  se = stepper.se(p);
+  sw = stepper.ne(p);
+
+  seSimilarity = similarity(c, getColor(se));
+  swSimilarity = similarity(c, getColor(sw));
+
+  if (seSimilarity > swSimilarity) {
+    if (seSimilarity > 0.9) {
+      setCoord(p, se);
+      return true;
+    }
+  }
+  else if (swSimilarity > 0.9) {
+    setCoord(p, sw);
+    return true;
+  }
+
+  return false;
 }
 
 void keyReleased() {
@@ -91,15 +77,39 @@ void keyReleased() {
       break;
 
     case 'r':
-      save("render.png");
+      img.save("render.png");
       break;
   }
 }
 
-float randf(float low, float high) {
-  return low + random(1) * (high - low);
+void mouseReleased() {
+  if (mouseX >= 0 && mouseX < img.width
+      && mouseY >= 0 && mouseY < img.height) {
+    img.loadPixels();
+    drip(mouseX, mouseY);
+    img.updatePixels();
+    redrawImage();
+  }
 }
 
-int randi(int low, int high) {
-  return low + floor(random(1) * (high - low));
+void setCoord(int[] p, int[] q) {
+  p[0] = q[0];
+  p[1] = q[1];
 }
+
+int[] cloneCoord(int[] p) {
+  return new int[]{p[0], p[1]};
+}
+
+float similarity(color a, color b) {
+  return 1 - (abs(red(b) - red(a)) + abs(green(b) - green(a)) + abs(blue(b) - blue(a))) / 768;
+}
+
+color getColor(int[] p) {
+  return img.pixels[p[1] * img.width + p[0]];
+}
+
+void setColor(int[] p, color c) {
+  img.pixels[p[1] * img.width + p[0]] = c;
+}
+
