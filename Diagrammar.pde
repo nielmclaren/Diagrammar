@@ -15,11 +15,11 @@ void draw() {
 void redraw() {
   background(0);
 
-  img = loadImage("NASA_Apollo_17_Lunar_Roving_Vehicle.jpg");
+  img = loadImage("input.jpg");
   stepper = new PixelStepper(img.width, img.height);
 
   img.loadPixels();
-  for (int i = 0; i < 100000; i++) {
+  for (int i = 0; i < 500000; i++) {
     drip(floor(random(1) * img.width), floor(random(1) * img.height));
   }
   img.updatePixels();
@@ -34,40 +34,42 @@ void redrawImage() {
 void drip(int x, int y) {
   int[] p = new int[]{x, y};
   color c = getColor(p);
+  float momentum = 0.2;
   while (p[0] >= 1 && p[0] < img.width - 1
       && p[1] >= 1 && p[1] < img.height - 1
-      && dripStep(c, p)) {}
+      && (momentum = dripStep(c, p, momentum)) > 0) {}
 }
 
-boolean dripStep(color c, int[] p) {
+float dripStep(color c, int[] p, float momentum) {
   int[] s, se, sw;
   float seSimilarity, swSimilarity;
+  float threshold = 0.4 + 0.6 * (1 - momentum);
 
   setColor(p, c);
 
-  if (similarity(c, getColor(s = stepper.e(p))) > 0.95) {
+  if (similarity(c, getColor(s = stepper.se(p))) > threshold) {
     setCoord(p, s);
-    return true;
+    return 0.95 * momentum;
   }
 
-  se = stepper.se(p);
-  sw = stepper.ne(p);
+  se = stepper.s(p);
+  sw = stepper.e(p);
 
   seSimilarity = similarity(c, getColor(se));
   swSimilarity = similarity(c, getColor(sw));
 
   if (seSimilarity > swSimilarity) {
-    if (seSimilarity > 0.9) {
+    if (seSimilarity > threshold * 0.9) {
       setCoord(p, se);
-      return true;
+      return 0.9 * momentum;
     }
   }
-  else if (swSimilarity > 0.9) {
+  else if (swSimilarity > threshold * 0.9) {
     setCoord(p, sw);
-    return true;
+    return 0.9 * momentum;
   }
 
-  return false;
+  return 0;
 }
 
 void keyReleased() {
