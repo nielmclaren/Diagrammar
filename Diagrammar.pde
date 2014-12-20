@@ -1,5 +1,7 @@
 
-BezierCurve curve;
+int numCurves;
+BezierCurve[] curves;
+VectorStepper[] steppers;
 
 ArrayList<Integer> colors;
 
@@ -7,17 +9,12 @@ void setup() {
   size(800, 600);
   frameRate(10);
 
-  curve = new BezierCurve();
-
   colors = new ArrayList<Integer>();
   colors.add(color(210, 169, 229));
   colors.add(color(240, 176, 215));
   colors.add(color(255, 151, 134));
   colors.add(color(255, 187, 142));
   colors.add(color(251, 241, 154));
-  colors.add(color(255, 187, 142));
-  colors.add(color(255, 151, 134));
-  colors.add(color(214, 173, 240));
 
   redraw();
 }
@@ -26,53 +23,61 @@ void draw() {
 }
 
 void redraw() {
-  background(0, 99, 191);
   redrawBackgroundGradient();
-
-  curve = new BezierCurve();
 
   LineSegment line;
 
-  int numSegments = randi(6, 12);
-  for (int i = 0; i < numSegments; i++) {
-    line = new LineSegment(random(width), random(height), random(width), random(height));
-    curve.addControl(line);
-  }
+  numCurves = 3;
+  curves = new BezierCurve[numCurves];
+  steppers = new VectorStepper[numCurves];
+  for (int i = 0; i < numCurves; i++) {
+    curves[i] = new BezierCurve();
+    steppers[i] = new VectorStepper(
+      new PVector(width/2, height/2), 50, 100);
 
-  noFill();
-  strokeWeight(3);
-
-  color c;
-  float curveLen = curve.getLength();
-  PVector p, foc0 = null, foc1 = null;
-  int numFocusLines = 1024;
-
-  float newFocProbability = 0.001;
-
-  int focusLineIndex = 0;
-  while (focusLineIndex < numFocusLines) {
-    if (foc0 == null || random(1) < newFocProbability) {
-      foc0 = new PVector(width * randf(0.25, 0.75), height * randf(0.25, 0.75));
-    }
-    if (foc1 == null || random(1) < newFocProbability) {
-      foc1 = new PVector(width * randf(0.25, 0.75), height * randf(0.25, 0.75));
+    int numSegments = randi(6, 16);
+    PVector pos, dir;
+    for (int j = 0; j < numSegments; j++) {
+      pos = steppers[i].next();
+      dir = steppers[i].getDirection();
+      line = new LineSegment(pos.x, pos.y, pos.x + dir.x, pos.y + dir.y);
+      curves[i].addControl(line);
     }
 
-    p = curve.getPointOnCurve((float)focusLineIndex / numFocusLines);
+    noFill();
+    strokeWeight(2);
 
-    c = colors.get(floor((float)focusLineIndex / numFocusLines * colors.size()));
-    drawGradientLine(foc0, p, c);
-    drawGradientLine(foc1, p, c);
+    color c;
+    float curveLen = curves[i].getLength();
+    PVector p, foc0 = null, foc1 = null;
+    int numFocusLines = 1024;
 
-    focusLineIndex++;
+    float newFocProbability = 0.001;
+
+    int focusLineIndex = 0;
+    while (focusLineIndex < numFocusLines) {
+      if (foc0 == null || random(1) < newFocProbability) {
+        foc0 = new PVector(width * randf(0.25, 0.75), height * randf(0.25, 0.75));
+      }
+      if (foc1 == null || random(1) < newFocProbability) {
+        foc1 = new PVector(width * randf(0.25, 0.75), height * randf(0.25, 0.75));
+      }
+
+      p = curves[i].getPointOnCurve((float)focusLineIndex / numFocusLines);
+
+      c = colors.get(floor((float)focusLineIndex / numFocusLines * colors.size()));
+      drawGradientLine(foc0, p, c);
+      drawGradientLine(foc1, p, c);
+
+      focusLineIndex++;
+    }
+
+    noFill();
+    stroke(255, 33);
+    strokeWeight(1);
+
+    curves[i].draw(this.g);
   }
-
-  noFill();
-  stroke(255, 33);
-  stroke(255, 100);
-  strokeWeight(1);
-
-  curve.draw(this.g);
 }
 
 void redrawBackgroundGradient() {
@@ -111,6 +116,7 @@ void drawGradientLine(PVector from, PVector to, color c) {
     if (t > 1) t = 1;
     curr.set(from.x + d.x * t, from.y + d.y * t);
     temp.set(curr.x - prev.x, curr.y - prev.y);
+    temp.mult(1.25);
     temp.rotate(random(1) * 2 * PI * 0.2);
     stroke(c, 50 * max(0, t - 0.2));
     line(prev.x, prev.y, prev.x + temp.x, prev.y + temp.y);
