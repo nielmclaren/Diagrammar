@@ -1,10 +1,23 @@
 
-PImage img;
-PixelStepper stepper;
+BezierCurve curve;
+
+ArrayList<Integer> colors;
 
 void setup() {
-  size(1000, 1000);
+  size(800, 600);
   frameRate(10);
+
+  curve = new BezierCurve();
+
+  colors = new ArrayList<Integer>();
+  colors.add(color(210, 169, 229));
+  colors.add(color(240, 176, 215));
+  colors.add(color(255, 151, 134));
+  colors.add(color(255, 187, 142));
+  colors.add(color(251, 241, 154));
+  colors.add(color(255, 187, 142));
+  colors.add(color(255, 151, 134));
+  colors.add(color(214, 173, 240));
 
   redraw();
 }
@@ -13,63 +26,96 @@ void draw() {
 }
 
 void redraw() {
-  background(0);
+  background(0, 99, 191);
+  redrawBackgroundGradient();
 
-  img = loadImage("input.jpg");
-  stepper = new PixelStepper(img.width, img.height);
+  curve = new BezierCurve();
 
-  img.loadPixels();
-  for (int i = 0; i < 500000; i++) {
-    drip(floor(random(1) * img.width), floor(random(1) * img.height));
-  }
-  img.updatePixels();
+  LineSegment line;
 
-  redrawImage();
-}
-
-void redrawImage() {
-  image(img, 0, 0);
-}
-
-void drip(int x, int y) {
-  int[] p = new int[]{x, y};
-  color c = getColor(p);
-  float momentum = 0.2;
-  while (p[0] >= 1 && p[0] < img.width - 1
-      && p[1] >= 1 && p[1] < img.height - 1
-      && (momentum = dripStep(c, p, momentum)) > 0) {}
-}
-
-float dripStep(color c, int[] p, float momentum) {
-  int[] s, se, sw;
-  float seSimilarity, swSimilarity;
-  float threshold = 0.4 + 0.6 * (1 - momentum);
-
-  setColor(p, c);
-
-  if (similarity(c, getColor(s = stepper.se(p))) > threshold) {
-    setCoord(p, s);
-    return 0.95 * momentum;
+  int numSegments = randi(6, 12);
+  for (int i = 0; i < numSegments; i++) {
+    line = new LineSegment(random(width), random(height), random(width), random(height));
+    curve.addControl(line);
   }
 
-  se = stepper.s(p);
-  sw = stepper.e(p);
+  noFill();
+  strokeWeight(3);
 
-  seSimilarity = similarity(c, getColor(se));
-  swSimilarity = similarity(c, getColor(sw));
+  color c;
+  float curveLen = curve.getLength();
+  PVector p, foc0 = null, foc1 = null;
+  int numFocusLines = 1024;
 
-  if (seSimilarity > swSimilarity) {
-    if (seSimilarity > threshold * 0.9) {
-      setCoord(p, se);
-      return 0.9 * momentum;
+  float newFocProbability = 0.001;
+
+  int focusLineIndex = 0;
+  while (focusLineIndex < numFocusLines) {
+    if (foc0 == null || random(1) < newFocProbability) {
+      foc0 = new PVector(width * randf(0.25, 0.75), height * randf(0.25, 0.75));
     }
-  }
-  else if (swSimilarity > threshold * 0.9) {
-    setCoord(p, sw);
-    return 0.9 * momentum;
+    if (foc1 == null || random(1) < newFocProbability) {
+      foc1 = new PVector(width * randf(0.25, 0.75), height * randf(0.25, 0.75));
+    }
+
+    p = curve.getPointOnCurve((float)focusLineIndex / numFocusLines);
+
+    c = colors.get(floor((float)focusLineIndex / numFocusLines * colors.size()));
+    drawGradientLine(foc0, p, c);
+    drawGradientLine(foc1, p, c);
+
+    focusLineIndex++;
   }
 
-  return 0;
+  noFill();
+  stroke(255, 33);
+  stroke(255, 100);
+  strokeWeight(1);
+
+  curve.draw(this.g);
+}
+
+void redrawBackgroundGradient() {
+  color c0 = color(62, 144, 221);
+  color c1 = color(0, 99, 191);
+  background(c1);
+  noStroke();
+
+  float x = width * 0.61;
+  float y = height * 0.3;
+  float dx = -0.1;
+  float dy = 0.125;
+  int radius = 2 * width;
+  float s = 100;
+  float ds = -0.5;
+  for (int r = radius; r > 0; --r) {
+    fill(lerpColor(c0, c1, (float) r / radius));
+    ellipse(x, y, r, r);
+    s += ds;
+    x += dx;
+    y += dy;
+  }
+}
+
+void drawGradientLine(PVector from, PVector to, color c) {
+  PVector prev = from.get(),
+      curr = new PVector(),
+      d = PVector.sub(to, from),
+      temp = new PVector();
+  float len = d.mag();
+
+  int count = 100;
+  float t = 0;
+  while (t < 1) {
+    t += random(1) / count;
+    if (t > 1) t = 1;
+    curr.set(from.x + d.x * t, from.y + d.y * t);
+    temp.set(curr.x - prev.x, curr.y - prev.y);
+    temp.rotate(random(1) * 2 * PI * 0.2);
+    stroke(c, 50 * max(0, t - 0.2));
+    line(prev.x, prev.y, prev.x + temp.x, prev.y + temp.y);
+    prev.set(curr);
+  }
 }
 
 void keyReleased() {
@@ -79,39 +125,15 @@ void keyReleased() {
       break;
 
     case 'r':
-      img.save("render.png");
+      save("render.png");
       break;
   }
 }
 
-void mouseReleased() {
-  if (mouseX >= 0 && mouseX < img.width
-      && mouseY >= 0 && mouseY < img.height) {
-    img.loadPixels();
-    drip(mouseX, mouseY);
-    img.updatePixels();
-    redrawImage();
-  }
+float randf(float low, float high) {
+  return low + random(1) * (high - low);
 }
 
-void setCoord(int[] p, int[] q) {
-  p[0] = q[0];
-  p[1] = q[1];
+int randi(int low, int high) {
+  return low + floor(random(1) * (high - low));
 }
-
-int[] cloneCoord(int[] p) {
-  return new int[]{p[0], p[1]};
-}
-
-float similarity(color a, color b) {
-  return 1 - (abs(red(b) - red(a)) + abs(green(b) - green(a)) + abs(blue(b) - blue(a))) / 768;
-}
-
-color getColor(int[] p) {
-  return img.pixels[p[1] * img.width + p[0]];
-}
-
-void setColor(int[] p, color c) {
-  img.pixels[p[1] * img.width + p[0]] = c;
-}
-
