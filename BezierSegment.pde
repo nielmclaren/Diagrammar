@@ -25,7 +25,7 @@ class BezierSegment {
     g.bezier(p0.x, p0.y, c0.x, c0.y, p1.x, p1.y, c1.x, c1.y);
   }
 
-  void drawControl(PGraphics g) {
+  void drawControls(PGraphics g) {
     g.line(p0.x, p0.y, c0.x, c0.y);
     g.line(p1.x, p1.y, c1.x, c1.y);
   }
