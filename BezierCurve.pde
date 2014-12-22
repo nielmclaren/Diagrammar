@@ -40,6 +40,11 @@ class BezierCurve {
     return controls.size() - 1;
   }
 
+  BezierSegment getSegment(int i) {
+    if (i < 0 || i + 1 >= controls.size()) return null;
+    return new BezierSegment(controls.get(i), controls.get(i + 1));
+  }
+
   void addControl(LineSegment control) {
     controls.add(control);
     recalculate();
