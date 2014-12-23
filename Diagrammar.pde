@@ -2,7 +2,7 @@
 int numCurves;
 BezierSegment[] posts;
 BezierSequence[] treble, bass;
-PImage trebleImg, bassImg;
+PImage trebleImg, bassImg, splatterImg;
 
 ArrayList<Integer> colors;
 
@@ -12,6 +12,7 @@ void setup() {
 
   trebleImg = loadImage("treble.png");
   bassImg = loadImage("bass.png");
+  splatterImg = loadImage("splatter.png");
 
   colors = new ArrayList<Integer>();
   colors.add(color(210, 169, 229));
@@ -88,6 +89,7 @@ void redraw() {
       posts[i].draw(this.g);
     }
   }
+
   pushMatrix();
   translate(40, 120);
   image(trebleImg, 0, 0);
@@ -109,6 +111,16 @@ void keyReleased() {
       save("render.png");
       break;
   }
+}
+
+void mouseReleased() {
+  float s = 0.07 * random(1);
+  pushMatrix();
+  translate(mouseX - splatterImg.width/2 * s, mouseY - splatterImg.height/2 * s);
+  rotate(random(1) * 2 * PI);
+  scale(s);
+  image(splatterImg, 0, 0);
+  popMatrix();
 }
 
 float randf(float low, float high) {
