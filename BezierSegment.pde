@@ -14,6 +14,13 @@ class BezierSegment {
     c1 = new PVector(endControlX, endControlY);
   }
 
+  BezierSegment(PVector start, PVector startControl, PVector end, PVector endControl) {
+    p0 = start;
+    c0 = startControl;
+    p1 = end;
+    c1 = endControl;
+  }
+
   BezierSegment(LineSegment start, LineSegment end) {
     p0 = new PVector(start.p0.x, start.p0.y);
     c0 = new PVector(start.p1.x, start.p1.y);

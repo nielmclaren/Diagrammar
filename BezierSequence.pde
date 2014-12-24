@@ -19,8 +19,8 @@ class BezierSequence {
     controlLine0 = _controlLine0;
     controlLine1 = _controlLine1;
 
-    minTime0 = minTime0 = 0;
-    maxTime0 = maxTime0 = 1;
+    minTime0 = minTime1 = 0;
+    maxTime0 = maxTime1 = 1;
   }
 
   BezierSequence(
