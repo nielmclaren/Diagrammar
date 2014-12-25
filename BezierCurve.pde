@@ -1,5 +1,5 @@
 
-class BezierCurve {
+class BezierCurve implements IVectorFunction {
   int POLYLINE_POINTS_PER_CONTROL = 100;
 
   ArrayList<LineSegment> controls;
@@ -69,7 +69,7 @@ class BezierCurve {
     return polylineLength;
   }
 
-  PVector getPointOnCurve(float t) {
+  PVector getPoint(float t) {
     if (controls.size() < 2) return null;
     if (t <= 0) return controls.get(0).p0.get();
     if (t >= 1) return controls.get(controls.size() - 1).p1.get();

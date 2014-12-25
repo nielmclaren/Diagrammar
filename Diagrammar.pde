@@ -26,34 +26,41 @@ void redraw() {
 
   VectorStepper stepper;
 
-  stepper = new VectorStepper(new PVector(randf(0, width), randf(0, height)));
+  stepper = new VectorStepper(new PVector(randf(0, width), randf(0, height)), 25, 25);
   BezierSegment b0 = new BezierSegment(
     stepper.next(), stepper.next(), stepper.next(), stepper.next());
 
-  stepper = new VectorStepper(new PVector(randf(0, width), randf(0, height)));
+  stepper = new VectorStepper(new PVector(randf(0, width), randf(0, height)), 25, 25);
   BezierSegment b1 = new BezierSegment(
     stepper.next(), stepper.next(), stepper.next(), stepper.next());
 
-  stepper = new VectorStepper(new PVector(randf(0, width), randf(0, height)));
+  stepper = new VectorStepper(new PVector(randf(0, width), randf(0, height)), 25, 25);
   BezierSegment b2 = new BezierSegment(
     stepper.next(), stepper.next(), stepper.next(), stepper.next());
 
-  stepper = new VectorStepper(new PVector(randf(0, width), randf(0, height)));
+  stepper = new VectorStepper(new PVector(randf(0, width), randf(0, height)), 25, 25);
   BezierSegment b3 = new BezierSegment(
     stepper.next(), stepper.next(), stepper.next(), stepper.next());
 
   BezierSequence s0 = new BezierSequence(5, b0, b1, b2, b3);
 
-  stroke(192);
-  b0.draw(this.g);
-  b1.draw(this.g);
-  b2.draw(this.g);
-  b3.draw(this.g);
+  BezierSegment firstSeg = s0.getBezierSegment(0);
+  BezierSegment lastSeg = s0.getBezierSegment(4);
 
+  strokeWeight(1);
   stroke(0);
   b0.draw(this.g);
   b3.draw(this.g);
+
   s0.draw(this.g);
+
+  (new LineSegment(firstSeg.getPoint(0.125), lastSeg.getPoint(0.125))).draw(this.g);
+  (new LineSegment(firstSeg.getPoint(0.25), lastSeg.getPoint(0.25))).draw(this.g);
+  (new LineSegment(firstSeg.getPoint(0.375), lastSeg.getPoint(0.375))).draw(this.g);
+  (new LineSegment(firstSeg.getPoint(0.5), lastSeg.getPoint(0.5))).draw(this.g);
+  (new LineSegment(firstSeg.getPoint(0.625), lastSeg.getPoint(0.625))).draw(this.g);
+  (new LineSegment(firstSeg.getPoint(0.75), lastSeg.getPoint(0.75))).draw(this.g);
+  (new LineSegment(firstSeg.getPoint(0.875), lastSeg.getPoint(0.875))).draw(this.g);
 }
 
 void keyReleased() {
