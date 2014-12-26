@@ -1,6 +1,5 @@
 
 class BezierSequence {
-  // FIXME: Allow line segments as controls, too. Need to make getPointOn interface.
   IVectorFunction seedLine0, seedLine1;
   IVectorFunction controlLine0, controlLine1;
   float minTime0, maxTime0, minTime1, maxTime1;
