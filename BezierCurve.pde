@@ -36,8 +36,8 @@ class BezierCurve implements IVectorFunction {
     }
   }
 
-  int numSegments() {
-    return controls.size() - 1;
+  int numControls() {
+    return controls.size();
   }
 
   BezierSegment getSegment(int i) {

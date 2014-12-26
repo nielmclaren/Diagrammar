@@ -26,46 +26,18 @@ void redraw() {
 void drawStuff() {
   noFill();
   strokeWeight(1);
+  stroke(0, 10);
 
   VectorStepper stepper;
+  BezierSequence s = new BezierSequence(24);
 
-  stepper = new VectorStepper(new PVector(randf(0, width), randf(0, height)), 25, 25);
-  BezierSegment b0 = new BezierSegment(
-    stepper.next(), stepper.next(), stepper.next(), stepper.next());
+  for (int i = 0; i < 20; i++) {
+    stepper = new VectorStepper(new PVector(randf(width/8, width*7/8), randf(height/8, height*7/8)), 25, 25);
+    s.addControl(new BezierSegment(
+      stepper.next(), stepper.next(), stepper.next(), stepper.next()));
+  }
 
-  stepper = new VectorStepper(new PVector(randf(0, width), randf(0, height)), 25, 25);
-  BezierSegment b1 = new BezierSegment(
-    stepper.next(), stepper.next(), stepper.next(), stepper.next());
-
-  stepper = new VectorStepper(new PVector(randf(0, width), randf(0, height)), 25, 25);
-  BezierSegment b2 = new BezierSegment(
-    stepper.next(), stepper.next(), stepper.next(), stepper.next());
-
-  stepper = new VectorStepper(new PVector(randf(0, width), randf(0, height)), 25, 25);
-  BezierSegment b3 = new BezierSegment(
-    stepper.next(), stepper.next(), stepper.next(), stepper.next());
-
-  BezierSequence s0 = new BezierSequence(5, b0, b1, b2, b3);
-
-  BezierSegment firstSeg = s0.getBezierSegment(0);
-  BezierSegment lastSeg = s0.getBezierSegment(4);
-
-  strokeWeight(1);
-  stroke(0);
-  b0.draw(this.g);
-  b3.draw(this.g);
-
-  s0.draw(this.g);
-
-  drawPosts(firstSeg, lastSeg);
-
-  PVector clefPt = lastSeg.getPoint(0.025);
-  clefPt.sub(firstSeg.getPoint(0.025));
-  clefPt.mult(0.5);
-  clefPt.add(firstSeg.getPoint(0.025));
-  drawClef(clefPt);
-
-  drawSplatter(firstSeg, lastSeg);
+  s.draw(this.g);
 }
 
 void drawPosts(BezierSegment firstSeg, BezierSegment lastSeg) {
