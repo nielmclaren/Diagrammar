@@ -48,20 +48,33 @@ class BezierSequence {
     for (int i = 0; i < numSegments; i++) {
       t0 = map((float)i / (numSegments - 1), 0, 1, minTime0, maxTime0);
       t1 = map((float)i / (numSegments - 1), 0, 1, minTime1, maxTime1);
-      drawSegment(t0, t1);
+      drawSegment(g, t0, t1);
     }
   }
 
-  private void drawSegment(float t0, float t1) {
-    for (int i = 3; i < controls.size(); i += 4) {
+  void drawControls(PGraphics g) {
+    for (int i = 0; i < controls.size(); i++) {
+      controls.get(i).draw(g);
+    }
+  }
+
+  private void drawSegment(PGraphics g, float t0, float t1) {
+    for (int i = 3; i < controls.size(); i += 2) {
       PVector m0 = controls.get(i-3).getPoint(t0);
-      PVector m1 = controls.get(i-2).getPoint(t1);
+      PVector c0 = controls.get(i-2).getPoint(t0);
+      PVector c1 = controls.get(i-1).getPoint(t1);
+      PVector m1 = controls.get(i).getPoint(t1);
 
-      PVector cm0 = controls.get(i-1).getPoint(t0);
-      PVector cm1 = controls.get(i).getPoint(t1);
-
-      bezier(m0.x, m0.y, cm0.x, cm0.y,
-        cm1.x, cm1.y, m1.x, m1.y);
+      if (i == 0) {
+        g.bezier(
+          m0.x, m0.y, c0.x, c0.y,
+          c1.x, c1.y, m1.x, m1.y);
+      }
+      else {
+        g.bezier(
+          c0.x, c0.y, 2 * c0.x - m0.x, 2 * c0.y - m0.y,
+          c1.x, c1.y, m1.x, m1.y);
+      }
     }
   }
 

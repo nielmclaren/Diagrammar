@@ -18,7 +18,7 @@ void draw() {
 
 void redraw() {
   background(255);
-  for (int i = 0; i < 10; i++) {
+  for (int i = 0; i < 1; i++) {
     drawStuff();
   }
 }
@@ -26,18 +26,21 @@ void redraw() {
 void drawStuff() {
   noFill();
   strokeWeight(1);
-  stroke(0, 10);
+  stroke(0);
 
   VectorStepper stepper;
-  BezierSequence s = new BezierSequence(24);
+  BezierSequence s = new BezierSequence(4);
 
-  for (int i = 0; i < 20; i++) {
+  for (int i = 0; i < 7; i++) {
     stepper = new VectorStepper(new PVector(randf(width/8, width*7/8), randf(height/8, height*7/8)), 25, 25);
     s.addControl(new BezierSegment(
       stepper.next(), stepper.next(), stepper.next(), stepper.next()));
   }
 
   s.draw(this.g);
+
+  stroke(128);
+  s.drawControls(this.g);
 }
 
 void drawPosts(BezierSegment firstSeg, BezierSegment lastSeg) {
