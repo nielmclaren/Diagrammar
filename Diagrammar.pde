@@ -1,10 +1,27 @@
 
 
+PImage charlieImg;
+PImage quarterNoteDarkImg, eighthNoteDarkImg, eighthNotePairDarkImg, sixteenthNotePairDarkImg;
+PImage quarterNoteLightImg, eighthNoteLightImg, eighthNotePairLightImg, sixteenthNotePairLightImg;
 PImage trebleImg, bassImg, splatterImg;
 
+boolean isLight;
+
 void setup() {
-  size(1024, 768);
+  size(1000, 1000);
   frameRate(10);
+
+  charlieImg = loadImage("charlie_parker.jpg");
+
+  quarterNoteDarkImg = loadImage("quarter_note_dark.png");
+  eighthNoteDarkImg = loadImage("eighth_note_dark.png");
+  eighthNotePairDarkImg = loadImage("eighth_note_pair_dark.png");
+  sixteenthNotePairDarkImg = loadImage("sixteenth_note_pair_dark.png");
+
+  quarterNoteLightImg = loadImage("quarter_note_light.png");
+  eighthNoteLightImg = loadImage("eighth_note_light.png");
+  eighthNotePairLightImg = loadImage("eighth_note_pair_light.png");
+  sixteenthNotePairLightImg = loadImage("sixteenth_note_pair_light.png");
 
   trebleImg = loadImage("treble.png");
   bassImg = loadImage("bass.png");
@@ -18,7 +35,10 @@ void draw() {
 
 void redraw() {
   background(255);
-  for (int i = 0; i < 1; i++) {
+  tint(255);
+  image(charlieImg, 0, 0);
+
+  for (int i = 0; i < 10; i++) {
     drawStuff();
   }
 }
@@ -26,31 +46,45 @@ void redraw() {
 void drawStuff() {
   noFill();
   strokeWeight(1);
-  stroke(0);
 
-  VectorStepper stepper;
-  BezierSequence s = new BezierSequence(4);
+  isLight = random(1) < 0.25;
+  if (isLight) {
+    stroke(255);
+    tint(255);
+  }
+  else {
+    stroke(27, 19, 20);
+    tint(27, 19, 20);
+  }
 
-  for (int i = 0; i < 7; i++) {
-    stepper = new VectorStepper(new PVector(randf(width/8, width*7/8), randf(height/8, height*7/8)), 25, 25);
-    s.addControl(new BezierSegment(
-      stepper.next(), stepper.next(), stepper.next(), stepper.next()));
+  VectorStepper stepper, lineStepper;
+  BezierSequence s = new BezierSequence(5);
+
+  PVector start = new PVector(216, 540);
+  stepper = new VectorStepper(start, new PVector(0.3,-1), 50, 75, 0, 2 * PI * 0.1);
+  for (int i = 0; i < 10; i++) {
+    lineStepper = new VectorStepper(stepper.next(), 25, 50);
+    s.addControl(new LineSegment(lineStepper.next(), lineStepper.next()));
   }
 
   s.draw(this.g);
 
-  stroke(128);
-  s.drawControls(this.g);
+  BezierCurve firstCurve = s.getCurve(0);
+  BezierCurve midCurve = s.getCurve(floor(s.getNumCurves() / 2));
+  BezierCurve lastCurve = s.getCurve(s.getNumCurves() - 1);
+
+  drawPosts(firstCurve, lastCurve);
+
+  drawClef(midCurve.getPoint(10 / midCurve.getLength()));
+  drawNotes(firstCurve, lastCurve);
 }
 
-void drawPosts(BezierSegment firstSeg, BezierSegment lastSeg) {
-  (new LineSegment(firstSeg.getPoint(0.125), lastSeg.getPoint(0.125))).draw(this.g);
-  (new LineSegment(firstSeg.getPoint(0.25), lastSeg.getPoint(0.25))).draw(this.g);
-  (new LineSegment(firstSeg.getPoint(0.375), lastSeg.getPoint(0.375))).draw(this.g);
-  (new LineSegment(firstSeg.getPoint(0.5), lastSeg.getPoint(0.5))).draw(this.g);
-  (new LineSegment(firstSeg.getPoint(0.625), lastSeg.getPoint(0.625))).draw(this.g);
-  (new LineSegment(firstSeg.getPoint(0.75), lastSeg.getPoint(0.75))).draw(this.g);
-  (new LineSegment(firstSeg.getPoint(0.875), lastSeg.getPoint(0.875))).draw(this.g);
+void drawPosts(BezierCurve firstCurve, BezierCurve lastCurve) {
+  float length = firstCurve.getLength();
+  for (float t = 0; t < 1; t += (float)75 / length) {
+    (new LineSegment(firstCurve.getPoint(t), lastCurve.getPoint(t))).draw(this.g);
+  }
+  (new LineSegment(firstCurve.getPoint(1), lastCurve.getPoint(1))).draw(this.g);
 }
 
 void drawClef(PVector p) {
@@ -58,17 +92,19 @@ void drawClef(PVector p) {
   pushMatrix();
   translate(p.x, p.y);
   rotate(2 * PI * random(1));
+  scale(0.5);
   image(img, -img.width/2, -img.height/2);
   popMatrix();
 }
 
-void drawSplatter(BezierSegment firstSeg, BezierSegment lastSeg) {
+void drawNotes(BezierCurve firstCurve, BezierCurve lastCurve) {
   int numSplats = randi(10, 100);
+  PImage img;
   for (int i = 0; i < numSplats; i++) {
     float t = random(1);
     int sign = randi(0, 2) * 2 - 1;
-    PVector firstPt = firstSeg.getPoint(t);
-    PVector lastPt = lastSeg.getPoint(t);
+    PVector firstPt = firstCurve.getPoint(t);
+    PVector lastPt = lastCurve.getPoint(t);
     PVector delta = PVector.sub(lastPt, firstPt);
     delta.mult(0.5);
     delta.mult(1.25);
@@ -76,12 +112,30 @@ void drawSplatter(BezierSegment firstSeg, BezierSegment lastSeg) {
     delta.mult(sign * random(1));
     PVector pos = PVector.add(mid, delta);
 
+    img = getNoteImage();
+
     pushMatrix();
     translate(pos.x, pos.y);
-    scale(randf(0.025, 0.1));
+    scale(0.06);
     rotate(2 * PI * random(1));
-    image(splatterImg, -splatterImg.width/2, -splatterImg.height/2);
+    image(img, -img.width/2, -img.height/2);
     popMatrix();
+  }
+}
+
+PImage getNoteImage() {
+  float x = random(1);
+  if (isLight) {
+    if (x < 0.15) return sixteenthNotePairLightImg;
+    if (x < 0.3) return eighthNotePairLightImg;
+    if (x < 0.6) return eighthNoteLightImg;
+    return quarterNoteLightImg;
+  }
+  else {
+    if (x < 0.15) return sixteenthNotePairDarkImg;
+    if (x < 0.3) return eighthNotePairDarkImg;
+    if (x < 0.6) return eighthNoteDarkImg;
+    return quarterNoteDarkImg;
   }
 }
 

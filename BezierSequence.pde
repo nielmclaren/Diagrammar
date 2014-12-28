@@ -98,6 +98,6 @@ class BezierSequence {
   }
 
   int getNumCurves() {
-    return controls.size() - 1;
+    return numCurves;
   }
 }
