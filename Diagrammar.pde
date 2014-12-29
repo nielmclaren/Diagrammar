@@ -1,6 +1,6 @@
 
 
-BezierSegment bs;
+BezierCurve bc;
 PVector p0, p1, p2, p3;
 float t;
 
@@ -15,20 +15,26 @@ void setup() {
 void draw() {
   background(255);
   t += 0.0125;
-  if (t > 1) t = 0;
+  if (t > 1) t = -0.125;
+  float t0 = constrain(t, 0, 1);
+  float t1 = constrain(t + 0.5, 0, 1);
 
-  PVector p = bs.getPoint(t);
+  PVector p;
+  p = bc.getPoint(t0);
+  ellipse(p.x, p.y, 10, 10);
+  p = bc.getPoint(t1);
   ellipse(p.x, p.y, 10, 10);
 
-  bs.draw(this.g, 0, t);
+  float len = bc.getLength();
+  bc.draw(this.g, t0, t1);
 }
 
 void redraw() {
-  p0 = new PVector(100, 300);
-  p1 = new PVector(100, 350);
-  p2 = new PVector(400, 200);
-  p3 = new PVector(450, 200);
-  bs = new BezierSegment(p0, p1, p2, p3);
+  bc = new BezierCurve();
+  bc.addControl(new LineSegment(100, 300, 300, 300));
+  bc.addControl(new LineSegment(400, 150, 500, 150));
+  bc.addControl(new LineSegment(700, 300, 700, 350));
+  bc.addControl(new LineSegment(500, 450, 450, 450));
 
   t = 0;
 }

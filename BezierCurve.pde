@@ -36,6 +36,47 @@ class BezierCurve implements IVectorFunction {
     }
   }
 
+  void draw(PGraphics g, float t0, float t1) {
+    LineSegment line0, line1;
+    float dist0 = t0 * polylineLength;
+    float dist1 = t1 * polylineLength;
+    float polylineDistance = 0;
+
+    for (int i = 0; i < numPolylinePoints - 1; i++) {
+      int controlsIndex = floor(polylineTimes[i] * (controls.size() - 1));
+      line0 = controls.get(controlsIndex);
+      line1 = controls.get(controlsIndex + 1);
+
+      if (dist0 <= polylineDistance) {
+        if (dist1 >= polylineDistance + polylineLengths[i]) {
+          if (controlsIndex == 0) {
+            g.bezier(
+              line0.p0.x, line0.p0.y, line0.p1.x, line0.p1.y,
+              line1.p0.x, line1.p0.y, line1.p1.x, line1.p1.y);
+          }
+          else {
+            g.bezier(
+              line0.p1.x, line0.p1.y, 2 * line0.p1.x - line0.p0.x, 2 * line0.p1.y - line0.p0.y,
+              line1.p0.x, line1.p0.y, line1.p1.x, line1.p1.y);
+          }
+        }
+        else {
+          // Partial segment from 0 to dist1.
+        }
+      }
+      else {
+        if (dist1 >= polylineDistance + polylineLengths[i]) {
+          // Partial segment from dist0 to 1.
+        }
+        else {
+          // Partial segment from dist0 to dist1.
+        }
+      }
+
+      polylineDistance += polylineLengths[i];
+    }
+  }
+
   int numControls() {
     return controls.size();
   }
