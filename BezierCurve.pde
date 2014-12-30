@@ -8,6 +8,7 @@ class BezierCurve implements IVectorFunction {
   float polylineLength;
   float[] polylineTimes;
   float[] polylineLengths;
+  float[] segmentLengths;
 
 
   BezierCurve() {
@@ -19,19 +20,18 @@ class BezierCurve implements IVectorFunction {
 
   void draw(PGraphics g) {
     LineSegment line0, line1;
-    for (int i = 0; i < controls.size() - 1; i++) {
+    for (int i = 0; i < controls.size () - 1; i++) {
       line0 = controls.get(i);
       line1 = controls.get(i + 1);
 
       if (i == 0) {
         g.bezier(
-          line0.p0.x, line0.p0.y, line0.p1.x, line0.p1.y,
-          line1.p0.x, line1.p0.y, line1.p1.x, line1.p1.y);
-      }
-      else {
+        line0.p0.x, line0.p0.y, line0.p1.x, line0.p1.y,
+        line1.p0.x, line1.p0.y, line1.p1.x, line1.p1.y);
+      } else {
         g.bezier(
-          line0.p1.x, line0.p1.y, 2 * line0.p1.x - line0.p0.x, 2 * line0.p1.y - line0.p0.y,
-          line1.p0.x, line1.p0.y, line1.p1.x, line1.p1.y);
+        line0.p1.x, line0.p1.y, 2 * line0.p1.x - line0.p0.x, 2 * line0.p1.y - line0.p0.y,
+        line1.p0.x, line1.p0.y, line1.p1.x, line1.p1.y);
       }
     }
   }
@@ -41,39 +41,83 @@ class BezierCurve implements IVectorFunction {
     float dist0 = t0 * polylineLength;
     float dist1 = t1 * polylineLength;
     float polylineDistance = 0;
+    float segmentDistance = 0, nextSegmentDistance = segmentLengths[0];
+    int prevControlIndex = 0;
 
-    for (int i = 0; i < numPolylinePoints - 1; i++) {
-      int controlsIndex = floor(polylineTimes[i] * (controls.size() - 1));
-      line0 = controls.get(controlsIndex);
-      line1 = controls.get(controlsIndex + 1);
+    // FIXME: Inefficient to instantiate a BezierSegment during draw.
+    BezierSegment bs;
 
-      if (dist0 <= polylineDistance) {
-        if (dist1 >= polylineDistance + polylineLengths[i]) {
-          if (controlsIndex == 0) {
-            g.bezier(
-              line0.p0.x, line0.p0.y, line0.p1.x, line0.p1.y,
-              line1.p0.x, line1.p0.y, line1.p1.x, line1.p1.y);
+
+    for (int i = 0; i < numPolylinePoints; i++) {
+      int controlIndex = floor(polylineTimes[i] * (controls.size() - 1));
+      if (prevControlIndex < controlIndex) {
+
+        line0 = controls.get(prevControlIndex);
+        line1 = controls.get(prevControlIndex + 1);
+
+        if (dist0 < nextSegmentDistance && dist1 > segmentDistance) {
+          // FIXME: Refactor.
+          if (dist0 <= segmentDistance) {
+            if (dist1 >= nextSegmentDistance) {
+              if (prevControlIndex == 0) {
+                g.bezier(
+                line0.p0.x, line0.p0.y, line0.p1.x, line0.p1.y,
+                line1.p0.x, line1.p0.y, line1.p1.x, line1.p1.y);
+              } else {
+                g.bezier(
+                line0.p1.x, line0.p1.y, 2 * line0.p1.x - line0.p0.x, 2 * line0.p1.y - line0.p0.y,
+                line1.p0.x, line1.p0.y, line1.p1.x, line1.p1.y);
+              }
+            } else {
+              // Partial segment from 0 to dist1.
+              if (prevControlIndex == 0) {
+                bs = new BezierSegment(
+                line0.p0.x, line0.p0.y, line0.p1.x, line0.p1.y,
+                line1.p0.x, line1.p0.y, line1.p1.x, line1.p1.y);
+              } else {
+                bs = new BezierSegment(
+                line0.p1.x, line0.p1.y, 2 * line0.p1.x - line0.p0.x, 2 * line0.p1.y - line0.p0.y,
+                line1.p0.x, line1.p0.y, line1.p1.x, line1.p1.y);
+              }
+              bs.draw(g, 0, (dist1 - segmentDistance) / (segmentLengths[prevControlIndex]));
+            }
+          } else {
+            if (dist1 >= nextSegmentDistance) {
+              // Partial segment from dist0 to 1.
+              if (prevControlIndex == 0) {
+                bs = new BezierSegment(
+                line0.p0.x, line0.p0.y, line0.p1.x, line0.p1.y,
+                line1.p0.x, line1.p0.y, line1.p1.x, line1.p1.y);
+              } else {
+                bs = new BezierSegment(
+                line0.p1.x, line0.p1.y, 2 * line0.p1.x - line0.p0.x, 2 * line0.p1.y - line0.p0.y,
+                line1.p0.x, line1.p0.y, line1.p1.x, line1.p1.y);
+              }
+              bs.draw(g, (dist0 - segmentDistance) / (segmentLengths[prevControlIndex]), 1);
+            } else {
+              // Partial segment from dist0 to dist1.
+              if (prevControlIndex == 0) {
+                bs = new BezierSegment(
+                line0.p0.x, line0.p0.y, line0.p1.x, line0.p1.y,
+                line1.p0.x, line1.p0.y, line1.p1.x, line1.p1.y);
+              } else {
+                bs = new BezierSegment(
+                line0.p1.x, line0.p1.y, 2 * line0.p1.x - line0.p0.x, 2 * line0.p1.y - line0.p0.y,
+                line1.p0.x, line1.p0.y, line1.p1.x, line1.p1.y);
+              }
+              bs.draw(g, (dist0 - segmentDistance) / (segmentLengths[prevControlIndex]), (dist1 - segmentDistance) / (segmentLengths[prevControlIndex]));
+            }
           }
-          else {
-            g.bezier(
-              line0.p1.x, line0.p1.y, 2 * line0.p1.x - line0.p0.x, 2 * line0.p1.y - line0.p0.y,
-              line1.p0.x, line1.p0.y, line1.p1.x, line1.p1.y);
-          }
         }
-        else {
-          // Partial segment from 0 to dist1.
-        }
-      }
-      else {
-        if (dist1 >= polylineDistance + polylineLengths[i]) {
-          // Partial segment from dist0 to 1.
-        }
-        else {
-          // Partial segment from dist0 to dist1.
-        }
+
+        prevControlIndex = controlIndex;
+        segmentDistance += segmentLengths[controlIndex - 1];
+        nextSegmentDistance = segmentDistance + segmentLengths[controlIndex];
       }
 
-      polylineDistance += polylineLengths[i];
+      if (i < numPolylinePoints - 1) {
+        polylineDistance += polylineLengths[i];
+      }
     }
   }
 
@@ -93,7 +137,7 @@ class BezierCurve implements IVectorFunction {
 
   void drawControls(PGraphics g) {
     LineSegment line;
-    for (int i = 0; i < controls.size(); i++) {
+    for (int i = 0; i < controls.size (); i++) {
       line = controls.get(i);
       g.line(line.p0.x, line.p0.y, line.p1.x, line.p1.y);
 
@@ -137,9 +181,9 @@ class BezierCurve implements IVectorFunction {
     float t2 = t * t;
     float t3 = t2 * t;
     return a + (-a * 3 + t * (3 * a - a * t)) * t
-    + (3 * b + t * (-6 * b + b * 3 * t)) * t
-    + (c * 3 - c * 3 * t) * t2
-    + d * t3;
+      + (3 * b + t * (-6 * b + b * 3 * t)) * t
+      + (c * 3 - c * 3 * t) * t2
+      + d * t3;
   }
 
   private int getPointOnCurveNaiveIndex(float t) {
@@ -161,13 +205,12 @@ class BezierCurve implements IVectorFunction {
     LineSegment line1 = controls.get(index + 1);
     if (index == 0) {
       return new PVector(
-        bezierInterpolation(line0.p0.x, line0.p1.x, line1.p0.x, line1.p1.x, u),
-        bezierInterpolation(line0.p0.y, line0.p1.y, line1.p0.y, line1.p1.y, u));
-    }
-    else {
+      bezierInterpolation(line0.p0.x, line0.p1.x, line1.p0.x, line1.p1.x, u),
+      bezierInterpolation(line0.p0.y, line0.p1.y, line1.p0.y, line1.p1.y, u));
+    } else {
       return new PVector(
-        bezierInterpolation(line0.p1.x, 2 * line0.p1.x - line0.p0.x, line1.p0.x, line1.p1.x, u),
-        bezierInterpolation(line0.p1.y, 2 * line0.p1.y - line0.p0.y, line1.p0.y, line1.p1.y, u));
+      bezierInterpolation(line0.p1.x, 2 * line0.p1.x - line0.p0.x, line1.p0.x, line1.p1.x, u),
+      bezierInterpolation(line0.p1.y, 2 * line0.p1.y - line0.p0.y, line1.p0.y, line1.p1.y, u));
     }
   }
 
@@ -180,23 +223,31 @@ class BezierCurve implements IVectorFunction {
     polylineTimes = new float[numPolylinePoints];
     polylineLengths = new float[numPolylinePoints - 1];
     polylineLength = 0;
-    float polylineDistance = 0;
+    segmentLengths = new float[controls.size()];
+    int polylineControlIndex, prevPolylineControlIndex = -1;
+    PVector d;
 
     for (int i = 0; i < numPolylinePoints; i++) {
       polylineTimes[i] = (float)i / (numPolylinePoints - 1);
       polylinePoints[i] = getPointOnCurveNaive(polylineTimes[i]);
-      polylineControlIndices[i] = getPointOnCurveNaiveIndex(polylineTimes[i]);
+      polylineControlIndex = polylineControlIndices[i] = getPointOnCurveNaiveIndex(polylineTimes[i]);
 
       if (i > 0) {
-        PVector d = polylinePoints[i].get();
+        d = polylinePoints[i].get();
         d.sub(polylinePoints[i - 1]);
         polylineLengths[i - 1] = d.mag();
         polylineLength += d.mag();
-        polylineDistance += polylineLength;
-      }
-      else {
+
+        if (prevPolylineControlIndex < polylineControlIndex) {
+          segmentLengths[polylineControlIndex] = d.mag();
+        } else {
+          segmentLengths[polylineControlIndex] += d.mag();
+        }
+        prevPolylineControlIndex = polylineControlIndex;
+      } else {
         polylineLengths[i] = 0;
       }
     }
   }
 }
+

@@ -9,6 +9,7 @@ void setup() {
   frameRate(30);
   noFill();
 
+  background(255);
   redraw();
 }
 
@@ -16,17 +17,25 @@ void draw() {
   background(255);
   t += 0.0125;
   if (t > 1) t = -0.125;
+
+  //t = 0.5;
+
   float t0 = constrain(t, 0, 1);
-  float t1 = constrain(t + 0.5, 0, 1);
+  float t1 = constrain(t + 0.25, 0, 1);
+
+  stroke(128);
+  strokeWeight(5);
+  //bc.draw(this.g);
+
+  stroke(0);
+  strokeWeight(2);
+  bc.draw(this.g, t0,t1);
 
   PVector p;
   p = bc.getPoint(t0);
   ellipse(p.x, p.y, 10, 10);
   p = bc.getPoint(t1);
   ellipse(p.x, p.y, 10, 10);
-
-  float len = bc.getLength();
-  bc.draw(this.g, t0, t1);
 }
 
 void redraw() {
