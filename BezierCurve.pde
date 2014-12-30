@@ -40,84 +40,74 @@ class BezierCurve implements IVectorFunction {
     LineSegment line0, line1;
     float dist0 = t0 * polylineLength;
     float dist1 = t1 * polylineLength;
-    float polylineDistance = 0;
     float segmentDistance = 0, nextSegmentDistance = segmentLengths[0];
-    int prevControlIndex = 0;
+
 
     // FIXME: Inefficient to instantiate a BezierSegment during draw.
     BezierSegment bs;
 
 
-    for (int i = 0; i < numPolylinePoints; i++) {
-      int controlIndex = floor(polylineTimes[i] * (controls.size() - 1));
-      if (prevControlIndex < controlIndex) {
+    for (int i = 0; i < controls.size() - 1; i++) {
+      line0 = controls.get(i);
+      line1 = controls.get(i + 1);
 
-        line0 = controls.get(prevControlIndex);
-        line1 = controls.get(prevControlIndex + 1);
-
-        if (dist0 < nextSegmentDistance && dist1 > segmentDistance) {
-          // FIXME: Refactor.
-          if (dist0 <= segmentDistance) {
-            if (dist1 >= nextSegmentDistance) {
-              if (prevControlIndex == 0) {
-                g.bezier(
-                line0.p0.x, line0.p0.y, line0.p1.x, line0.p1.y,
-                line1.p0.x, line1.p0.y, line1.p1.x, line1.p1.y);
-              } else {
-                g.bezier(
-                line0.p1.x, line0.p1.y, 2 * line0.p1.x - line0.p0.x, 2 * line0.p1.y - line0.p0.y,
-                line1.p0.x, line1.p0.y, line1.p1.x, line1.p1.y);
-              }
+      if (dist0 < nextSegmentDistance && dist1 > segmentDistance) {
+        // FIXME: Refactor.
+        if (dist0 <= segmentDistance) {
+          if (dist1 >= nextSegmentDistance) {
+            if (i == 0) {
+              g.bezier(
+              line0.p0.x, line0.p0.y, line0.p1.x, line0.p1.y,
+              line1.p0.x, line1.p0.y, line1.p1.x, line1.p1.y);
             } else {
-              // Partial segment from 0 to dist1.
-              if (prevControlIndex == 0) {
-                bs = new BezierSegment(
-                line0.p0.x, line0.p0.y, line0.p1.x, line0.p1.y,
-                line1.p0.x, line1.p0.y, line1.p1.x, line1.p1.y);
-              } else {
-                bs = new BezierSegment(
-                line0.p1.x, line0.p1.y, 2 * line0.p1.x - line0.p0.x, 2 * line0.p1.y - line0.p0.y,
-                line1.p0.x, line1.p0.y, line1.p1.x, line1.p1.y);
-              }
-              bs.draw(g, 0, (dist1 - segmentDistance) / (segmentLengths[prevControlIndex]));
+              g.bezier(
+              line0.p1.x, line0.p1.y, 2 * line0.p1.x - line0.p0.x, 2 * line0.p1.y - line0.p0.y,
+              line1.p0.x, line1.p0.y, line1.p1.x, line1.p1.y);
             }
           } else {
-            if (dist1 >= nextSegmentDistance) {
-              // Partial segment from dist0 to 1.
-              if (prevControlIndex == 0) {
-                bs = new BezierSegment(
-                line0.p0.x, line0.p0.y, line0.p1.x, line0.p1.y,
-                line1.p0.x, line1.p0.y, line1.p1.x, line1.p1.y);
-              } else {
-                bs = new BezierSegment(
-                line0.p1.x, line0.p1.y, 2 * line0.p1.x - line0.p0.x, 2 * line0.p1.y - line0.p0.y,
-                line1.p0.x, line1.p0.y, line1.p1.x, line1.p1.y);
-              }
-              bs.draw(g, (dist0 - segmentDistance) / (segmentLengths[prevControlIndex]), 1);
+            // Partial segment from 0 to dist1.
+            if (i == 0) {
+              bs = new BezierSegment(
+              line0.p0.x, line0.p0.y, line0.p1.x, line0.p1.y,
+              line1.p0.x, line1.p0.y, line1.p1.x, line1.p1.y);
             } else {
-              // Partial segment from dist0 to dist1.
-              if (prevControlIndex == 0) {
-                bs = new BezierSegment(
-                line0.p0.x, line0.p0.y, line0.p1.x, line0.p1.y,
-                line1.p0.x, line1.p0.y, line1.p1.x, line1.p1.y);
-              } else {
-                bs = new BezierSegment(
-                line0.p1.x, line0.p1.y, 2 * line0.p1.x - line0.p0.x, 2 * line0.p1.y - line0.p0.y,
-                line1.p0.x, line1.p0.y, line1.p1.x, line1.p1.y);
-              }
-              bs.draw(g, (dist0 - segmentDistance) / (segmentLengths[prevControlIndex]), (dist1 - segmentDistance) / (segmentLengths[prevControlIndex]));
+              bs = new BezierSegment(
+              line0.p1.x, line0.p1.y, 2 * line0.p1.x - line0.p0.x, 2 * line0.p1.y - line0.p0.y,
+              line1.p0.x, line1.p0.y, line1.p1.x, line1.p1.y);
             }
+            bs.draw(g, 0, (dist1 - segmentDistance) / (segmentLengths[i]));
+          }
+        } else {
+          if (dist1 >= nextSegmentDistance) {
+            // Partial segment from dist0 to 1.
+            if (i == 0) {
+              bs = new BezierSegment(
+              line0.p0.x, line0.p0.y, line0.p1.x, line0.p1.y,
+              line1.p0.x, line1.p0.y, line1.p1.x, line1.p1.y);
+            } else {
+              bs = new BezierSegment(
+              line0.p1.x, line0.p1.y, 2 * line0.p1.x - line0.p0.x, 2 * line0.p1.y - line0.p0.y,
+              line1.p0.x, line1.p0.y, line1.p1.x, line1.p1.y);
+            }
+            bs.draw(g, (dist0 - segmentDistance) / (segmentLengths[i]), 1);
+          } else {
+            // Partial segment from dist0 to dist1.
+            if (i == 0) {
+              bs = new BezierSegment(
+              line0.p0.x, line0.p0.y, line0.p1.x, line0.p1.y,
+              line1.p0.x, line1.p0.y, line1.p1.x, line1.p1.y);
+            } else {
+              bs = new BezierSegment(
+              line0.p1.x, line0.p1.y, 2 * line0.p1.x - line0.p0.x, 2 * line0.p1.y - line0.p0.y,
+              line1.p0.x, line1.p0.y, line1.p1.x, line1.p1.y);
+            }
+            bs.draw(g, (dist0 - segmentDistance) / (segmentLengths[i]), (dist1 - segmentDistance) / (segmentLengths[i]));
           }
         }
-
-        prevControlIndex = controlIndex;
-        segmentDistance += segmentLengths[controlIndex - 1];
-        nextSegmentDistance = segmentDistance + segmentLengths[controlIndex];
       }
 
-      if (i < numPolylinePoints - 1) {
-        polylineDistance += polylineLengths[i];
-      }
+      segmentDistance += segmentLengths[i];
+      nextSegmentDistance = segmentDistance + segmentLengths[i + 1];
     }
   }
 
