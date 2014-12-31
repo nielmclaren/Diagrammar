@@ -61,7 +61,7 @@ class BezierCurve implements IVectorFunction {
       polylineDist += polylineLengths[i];
     }
 
-    for (int i = floor(t0 * numSegments); i < floor(t1 * numSegments) + 1; i++) {
+    for (int i = floor(t0 * numSegments); i < floor(t1 * numSegments) + 1 && i < numSegments; i++) {
       line0 = controls.get(i);
       line1 = controls.get(i + 1);
 
