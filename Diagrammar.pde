@@ -2,7 +2,7 @@
 
 BezierCurve bc;
 PVector p0, p1, p2, p3;
-float t;
+float t, d;
 
 void setup() {
   size(800, 600);
@@ -10,22 +10,20 @@ void setup() {
   noFill();
 
   background(255);
+  d = random(1);
   redraw();
 }
 
 void draw() {
   background(255);
   t += 0.0125;
-  if (t > 1) t = -0.125;
-
-  //t = 0.5;
+  if (t > 1) {
+    d = random(1);
+    t = -d;
+  }
 
   float t0 = constrain(t, 0, 1);
-  float t1 = constrain(t + 0.25, 0, 1);
-
-  stroke(128);
-  strokeWeight(5);
-  //bc.draw(this.g);
+  float t1 = constrain(t + d, 0, 1);
 
   stroke(0);
   strokeWeight(2);
