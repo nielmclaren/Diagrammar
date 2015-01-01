@@ -6,44 +6,51 @@ BezierCurve[] curves;
 float[] offsets;
 float[] lengths;
 float[] colors;
+PVector[] foc0;
+PVector[] foc1;
 float time;
 
 
 void setup() {
-  size(640, 480);
+  size(800, 600);
   frameRate(30);
 
   reset();
 }
 
 void draw() {
-  time += 0.0125;
+  time += 0.005;
   if (time > 1) time = time % 1;
   redraw(this.g, time);
+  saveFrame("render####.tif");
 }
 
 void reset() {
-  numCurves = randi(41, 79);
+  numCurves = 4;
   curves = new BezierCurve[numCurves];
   offsets = new float[numCurves];
   lengths = new float[numCurves];
   colors = new float[numCurves];
+  foc0 = new PVector[numCurves];
+  foc1 = new PVector[numCurves];
 
   ArrayList<Integer> colorChoices = new ArrayList<Integer>();
-  colorChoices.add(color(90, 87, 154));
-  colorChoices.add(color(3, 66, 137));
-  colorChoices.add(color(90, 87, 154));
-  colorChoices.add(color(3, 66, 137));
-  colorChoices.add(color(90, 87, 154));
-  colorChoices.add(color(3, 66, 137));
-  colorChoices.add(color(241, 46, 43));
+  colorChoices.add(color(90, 87, 154, 60));
+  colorChoices.add(color(3, 66, 137, 60));
+  colorChoices.add(color(90, 87, 154, 60));
+  colorChoices.add(color(3, 66, 137, 60));
+  colorChoices.add(color(90, 87, 154, 60));
+  colorChoices.add(color(3, 66, 137, 60));
+  colorChoices.add(color(241, 46, 43, 60));
 
   for (int i = 0; i < numCurves; i++) {
     curves[i] = createBezierCurve();
 
     offsets[i] = random(1);
-    lengths[i] = 30 / curves[i].getLength();
+    lengths[i] = 150 / curves[i].getLength();
     colors[i] = colorChoices.get(floor(random(1) * colorChoices.size()));
+    foc0[i] = null;
+    foc1[i] = null;
   }
 
   time = 0;
@@ -52,9 +59,10 @@ void reset() {
 void redraw(PGraphics g, float t) {
   float t0, t1;
   PVector p;
+  int numFocusLines = 32;
+  float newFocProbability = 0.0;
 
   g.background(21, 12, 51);
-  g.strokeWeight(8);
 
   for (int i = 0; i < numCurves; i++) {
     t0 = map((t + offsets[i]) % 1, 0, 1, -lengths[i], 1);
@@ -63,9 +71,25 @@ void redraw(PGraphics g, float t) {
     t0 = constrain(t0, 0, 1);
     t1 = constrain(t1, 0, 1);
 
-    g.stroke((color)colors[i]);
+    g.stroke(255, 33);
+    g.strokeWeight(2);
     g.noFill();
     curves[i].draw(g, t0, t1);
+
+    g.stroke((color)colors[i]);
+    g.strokeWeight(2);
+    for (int j = 0; j < numFocusLines; j++) {
+      if (foc0[i] == null || random(1) < newFocProbability) {
+        foc0[i] = new PVector(width * 0.5, height * 0.1);
+      }
+      if (foc1[i] == null || random(1) < newFocProbability) {
+        foc1[i] = new PVector(width * 0.5, height * 0.9);
+      }
+
+      p = curves[i].getPoint(floor(map((float)j / numFocusLines, 0, 1, t0, t1) * 1000) / 1000.0);
+      g.line(p.x, p.y, foc0[0].x, foc0[0].y);
+      g.line(p.x, p.y, foc1[0].x, foc1[0].y);
+    }
   }
 }
 
@@ -73,7 +97,7 @@ BezierCurve createBezierCurve() {
   BezierCurve bc = new BezierCurve();
   VectorStepper stepper;
 
-  int numControls = 3;
+  int numControls = 7;
   for (int i = 0; i < numControls; i++) {
     stepper = new VectorStepper(new PVector(randf(width/6, width*5/6), randf(height/6, height*5/6)), 50, 100);
     bc.addControl(new LineSegment(stepper.next(), stepper.next()));
@@ -89,7 +113,7 @@ void keyReleased() {
       break;
 
     case 'r':
-      saveRender();
+      save("render.png");
       break;
   }
 }
