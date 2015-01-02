@@ -76,6 +76,10 @@ class VectorStepper {
       0, 2 * PI * 0.167);
   }
 
+  PVector curr() {
+    return pos.get();
+  }
+
   PVector next() {
     int sign = 1 - 2 * floor(random(2));
     dir.normalize();
