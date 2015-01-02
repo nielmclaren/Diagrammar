@@ -1,15 +1,7 @@
 
-import gifAnimation.*;
 
-int numCurves;
-BezierCurve[] curves;
-float[] offsets;
-float[] lengths;
-float[] colors;
-PVector[] foc0;
-PVector[] foc1;
+BezierSequence bs;
 float time;
-
 
 void setup() {
   size(800, 600);
@@ -19,39 +11,37 @@ void setup() {
 }
 
 void draw() {
-  time += 0.005;
+  time += 0.0125;
   if (time > 1) time = time % 1;
+
   redraw(this.g, time);
-  saveFrame("render####.tif");
 }
 
 void reset() {
-  numCurves = 4;
-  curves = new BezierCurve[numCurves];
-  offsets = new float[numCurves];
-  lengths = new float[numCurves];
-  colors = new float[numCurves];
-  foc0 = new PVector[numCurves];
-  foc1 = new PVector[numCurves];
-
-  ArrayList<Integer> colorChoices = new ArrayList<Integer>();
-  colorChoices.add(color(90, 87, 154, 60));
-  colorChoices.add(color(3, 66, 137, 60));
-  colorChoices.add(color(90, 87, 154, 60));
-  colorChoices.add(color(3, 66, 137, 60));
-  colorChoices.add(color(90, 87, 154, 60));
-  colorChoices.add(color(3, 66, 137, 60));
-  colorChoices.add(color(241, 46, 43, 60));
-
-  for (int i = 0; i < numCurves; i++) {
-    curves[i] = createBezierCurve();
-
-    offsets[i] = random(1);
-    lengths[i] = 150 / curves[i].getLength();
-    colors[i] = colorChoices.get(floor(random(1) * colorChoices.size()));
-    foc0[i] = null;
-    foc1[i] = null;
+  bs = new BezierSequence(5);
+  /*
+  VectorStepper stepper0 = new VectorStepper(
+    new PVector(0, width*0.5), new PVector(1, 0), 50, 75, PI * 0.05, PI * 0.05),
+    stepper1;
+  LineSegment line;
+  for (int i = 0; i < 10; i++) {
+    stepper1 = new VectorStepper(stepper0.next(), new PVector(0, -1), 25, 50, PI * 0.1, PI * 0.1);
+    line = new LineSegment(stepper1.next(), stepper1.next());
+    println("bs.addControl(new LineSegment(" + line.p0.x + ", " + line.p0.y + ", " + line.p1.x + ", " + line.p1.y + "));");
+    bs.addControl(line);
   }
+  */
+
+  bs.addControl(new LineSegment(45.16468, 347.96848, 17.105837, 309.3488));
+  bs.addControl(new LineSegment(122.89366, 357.85144, 122.89366, 321.82938));
+  bs.addControl(new LineSegment(194.4061, 373.6504, 194.4061, 343.86325));
+  bs.addControl(new LineSegment(258.46652, 380.73953, 258.46652, 335.47012));
+  bs.addControl(new LineSegment(285.52515, 388.30923, 263.13983, 357.4985));
+  bs.addControl(new LineSegment(374.7312, 406.12653, 374.7312, 364.24716));
+  bs.addControl(new LineSegment(409.18533, 395.2421, 393.65805, 373.87064));
+  bs.addControl(new LineSegment(498.58636, 386.87125, 525.59424, 349.6981));
+  bs.addControl(new LineSegment(573.3299, 367.11798, 573.3299, 335.01013));
+  bs.addControl(new LineSegment(632.6387, 349.9786, 632.6387, 301.26776));
 
   time = 0;
 }
@@ -59,51 +49,20 @@ void reset() {
 void redraw(PGraphics g, float t) {
   float t0, t1;
   PVector p;
-  int numFocusLines = 32;
-  float newFocProbability = 0.0;
+  float offset = 0, length = 0.25;
 
-  g.background(21, 12, 51);
+  g.background(255);
 
-  for (int i = 0; i < numCurves; i++) {
-    t0 = map((t + offsets[i]) % 1, 0, 1, -lengths[i], 1);
-    t1 = t0 + lengths[i];
+  t0 = map((t + offset) % 1, 0, 1, -length, 1);
+  t1 = t0 + length;
 
-    t0 = constrain(t0, 0, 1);
-    t1 = constrain(t1, 0, 1);
+  t0 = constrain(t0, 0, 1);
+  t1 = constrain(t1, 0, 1);
 
-    g.stroke(255, 33);
-    g.strokeWeight(2);
-    g.noFill();
-    curves[i].draw(g, t0, t1);
-
-    g.stroke((color)colors[i]);
-    g.strokeWeight(2);
-    for (int j = 0; j < numFocusLines; j++) {
-      if (foc0[i] == null || random(1) < newFocProbability) {
-        foc0[i] = new PVector(width * 0.5, height * 0.1);
-      }
-      if (foc1[i] == null || random(1) < newFocProbability) {
-        foc1[i] = new PVector(width * 0.5, height * 0.9);
-      }
-
-      p = curves[i].getPoint(floor(map((float)j / numFocusLines, 0, 1, t0, t1) * 1000) / 1000.0);
-      g.line(p.x, p.y, foc0[0].x, foc0[0].y);
-      g.line(p.x, p.y, foc1[0].x, foc1[0].y);
-    }
-  }
-}
-
-BezierCurve createBezierCurve() {
-  BezierCurve bc = new BezierCurve();
-  VectorStepper stepper;
-
-  int numControls = 7;
-  for (int i = 0; i < numControls; i++) {
-    stepper = new VectorStepper(new PVector(randf(width/6, width*5/6), randf(height/6, height*5/6)), 50, 100);
-    bc.addControl(new LineSegment(stepper.next(), stepper.next()));
-  }
-
-  return bc;
+  g.stroke(0);
+  g.strokeWeight(1);
+  g.noFill();
+  bs.draw(this.g, t0, t1);
 }
 
 void keyReleased() {
@@ -116,24 +75,6 @@ void keyReleased() {
       save("render.png");
       break;
   }
-}
-
-void saveRender() {
-  GifMaker gif = new GifMaker(this, "render.gif");
-  gif.setRepeat(0); // Endless animation.
-
-  int numFrames = 30;
-  for (float t = 0; t <= 1; t += 1.0/numFrames) {
-    PGraphics render = createGraphics(width, height);
-    render.beginDraw();
-    redraw(render, t);
-    render.endDraw();
-
-    gif.setDelay(1);
-    gif.addFrame(render);
-  }
-
-  gif.finish();
 }
 
 float randf(float low, float high) {

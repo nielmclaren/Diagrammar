@@ -41,7 +41,7 @@ class BezierCurve implements IVectorFunction {
     float dist0 = t0 * polylineLength;
     float dist1 = t1 * polylineLength;
     float segmentDistance = 0, nextSegmentDistance = segmentLengths[0];
-    int numSegments = controls.size () - 1;
+    int numSegments = controls.size() - 1;
     float u0, u1;
 
     // FIXME: Inefficient to instantiate a BezierSegment during draw.
