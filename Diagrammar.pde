@@ -57,7 +57,6 @@ void draw() {
     ellipse(p.x, p.y, rw*0.8, rh*0.8);
   }
 
-  /*
   fill(255);
   stroke(128);
   strokeWeight(1);
@@ -69,7 +68,6 @@ void draw() {
       ellipse(p.x, p.y, rw * (1 - (float)j/10), rh * (1 - (float)j/10));
     }
   }
-  //*/
 }
 
 void mouseReleased() {
