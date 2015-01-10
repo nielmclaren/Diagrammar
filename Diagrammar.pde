@@ -3,6 +3,7 @@ FileNamer fileNamer;
 
 void setup() {
   size(1024, 768);
+  smooth();
 
   fileNamer = new FileNamer("output/render", "png");
 
@@ -10,16 +11,33 @@ void setup() {
 }
 
 void reset() {
-  int numCols = 7;
-  int numRows = 8;
-  CloudRenderer cloud;
+  float w = width * 0.9;
+  float h = height * 0.925;
+  float w0 = (width - w)/2;
+  float h0 = height * 0.0075;
 
-  background(255);
+  int numCols = 7;
+  int numRows = 5;
+  CloudRenderer cloud;
+  CloudDropping dropping;
+
+  background(248);
 
   for (int c = 0; c < numCols; c++) {
     for (int r = 0; r < numRows; r++) {
-      cloud = new CloudRenderer((0.5 + c) * width/numCols, (0.5 + r) * width/numRows, "cartoon", randi(6, 14), 10, 20, 0.85);
+      pushMatrix();
+      translate(
+        w0 + (0.5 + c) * w/numCols,
+        h0 + (0.5 + r) * h/numRows);
+
+      cloud = new CloudRenderer(
+        "cartoon", randi(6, 14), 10, 20, 0.85);
+
+      dropping = new CloudDropping(cloud);
+      dropping.draw(this.g);
       cloud.draw(this.g);
+
+      popMatrix();
     }
   }
 }

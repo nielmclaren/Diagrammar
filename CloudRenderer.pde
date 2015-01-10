@@ -3,27 +3,26 @@ import java.util.Collections;
 import megamu.mesh.*;
 
 class CloudRenderer {
-  PVector _position;
   ArrayList<Puff> _puffs;
   String _style;
   int _numPuffs;
   float _minRadius, _maxRadius;
   float _innerRadiusFactor;
 
-  CloudRenderer(float x, float y) {
-    init(x, y, "cartoon", 10, 40, 80, 0.8);
+  CloudRenderer() {
+    init("cartoon", 10, 40, 80, 0.8);
   }
 
-  CloudRenderer(float x, float y, String style, int numPuffs, float minRadius, float maxRadius) {
-    init(x, y, "cartoon", numPuffs, minRadius, maxRadius, 0.8);
+  CloudRenderer(String style, int numPuffs, float minRadius, float maxRadius) {
+    init("cartoon", numPuffs, minRadius, maxRadius, 0.8);
   }
 
-  CloudRenderer(float x, float y, String style, int numPuffs, float minRadius, float maxRadius, float innerRadiusFactor) {
-    init(x, y, "cartoon", numPuffs, minRadius, maxRadius, innerRadiusFactor);
+  CloudRenderer(String style, int numPuffs, float minRadius, float maxRadius, float innerRadiusFactor) {
+    init("cartoon", numPuffs, minRadius, maxRadius, innerRadiusFactor);
   }
 
   void draw(PGraphics g) {
-    PVector offset = _position.get();
+    PVector offset = new PVector();
     offset.sub(getBoundsCenter());
 
     g.fill(255);
@@ -48,11 +47,18 @@ class CloudRenderer {
     bounds[1][1] = -Float.MAX_VALUE;
 
     for (Puff puff : _puffs) {
-      if (puff.x < bounds[0][0]) bounds[0][0] = puff.x;
-      if (puff.x > bounds[1][0]) bounds[1][0] = puff.x;
-      if (puff.y < bounds[0][1]) bounds[0][1] = puff.y;
-      if (puff.y > bounds[1][1]) bounds[1][1] = puff.y;
+      if (puff.x - puff.r < bounds[0][0]) bounds[0][0] = puff.x - puff.r;
+      if (puff.x + puff.r > bounds[1][0]) bounds[1][0] = puff.x + puff.r;
+      if (puff.y - puff.r < bounds[0][1]) bounds[0][1] = puff.y - puff.r;
+      if (puff.y + puff.r > bounds[1][1]) bounds[1][1] = puff.y + puff.r;
     }
+
+    PVector offset = new PVector();
+    offset.sub(getBoundsCenter());
+    bounds[0][0] += offset.x;
+    bounds[1][0] += offset.x;
+    bounds[0][1] += offset.y;
+    bounds[1][1] += offset.y;
 
     return bounds;
   }
@@ -64,24 +70,21 @@ class CloudRenderer {
     float maxY = -Float.MAX_VALUE;
 
     for (Puff puff : _puffs) {
-      if (puff.x < minX) minX = puff.x;
-      if (puff.x > maxX) maxX = puff.x;
-      if (puff.y < minY) minY = puff.y;
-      if (puff.y > maxY) maxY = puff.y;
+      if (puff.x - puff.r < minX) minX = puff.x - puff.r;
+      if (puff.x + puff.r > maxX) maxX = puff.x + puff.r;
+      if (puff.y - puff.r < minY) minY = puff.y - puff.r;
+      if (puff.y + puff.r > maxY) maxY = puff.y + puff.r;
     }
 
     return new PVector(minX + (maxX - minX)/2, minY + (maxY - minY)/2);
   }
 
   private void init(
-      float posX,
-      float posY,
       String style,
       int numPuffs,
       float minRadius,
       float maxRadius,
       float innerRadiusFactor) {
-    _position = new PVector(posX, posY);
     _style = style; // "cartoon" or "concentrics"
     _numPuffs = numPuffs;
     _minRadius = minRadius;
