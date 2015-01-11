@@ -1,24 +1,43 @@
 
 class CloudDropping {
+  final int GRID_MODE = 0;
+  final int SERIES_MODE = 1;
+  final int SINGLE_MODE = 2;
+  final int PIXEL_DRIP_MODE = 3;
+
   CloudRenderer _cloud;
+  float _time;
+  int _mode;
 
   CloudDropping(CloudRenderer cloud) {
     _cloud = cloud;
+    _time = random(1);
+
+    float x = random(1);
+    if (x < 0.15) _mode = SINGLE_MODE;
+    else if (x < 0.35) _mode = GRID_MODE;
+    else if (x < 0.65) _mode = SERIES_MODE;
+    else _mode = PIXEL_DRIP_MODE;
+  }
+
+  public void step() {
+    _time = (_time + 0.125) % 1;
   }
 
   public void draw(PGraphics g) {
-    float x = random(1);
-    if (x < 0.25) {
-      drawGrid(g);
-    }
-    else if (x < 0.5) {
-      drawSeries(g);
-    }
-    else if (x < 0.75) {
-      drawSingle(g);
-    }
-    else {
-      drawPixelDrip(g);
+    switch (_mode) {
+      case GRID_MODE:
+        drawGrid(g);
+        break;
+      case SERIES_MODE:
+        drawSeries(g);
+        break;
+      case SINGLE_MODE:
+        drawSingle(g);
+        break;
+      case PIXEL_DRIP_MODE:
+        drawPixelDrip(g);
+        break;
     }
   }
 
@@ -27,22 +46,24 @@ class CloudDropping {
     float[][] bounds = _cloud.getBounds();
     float dc = 10, dr = 10;
 
+    offset.y += (_time * 2) % 1 * dc;
+
     float boundsWidth = bounds[1][0] - bounds[0][0];
     float boundsHeight = bounds[1][1] - bounds[0][1];
     float w = floor(boundsWidth * 0.7 / dc) * dc + 5;
-    float h = 50 + random(1) * 25;
+    float h = 75;
     float startX = -w / 2;
     float startY = 0;
 
     g.stroke(128);
-    g.strokeWeight(3);
+    g.strokeWeight(2);
     for (float c = 0; c < w; c += dc) {
       for (float r = 0; r < h; r += dr) {
         g.line(
           offset.x + startX + c,
           offset.y + startY + r,
-          offset.x + startX + c - 5,
-          offset.y + startY + r + 5);
+          offset.x + startX + c - 4,
+          offset.y + startY + r + 4);
       }
     }
   }
@@ -52,10 +73,12 @@ class CloudDropping {
     float[][] bounds = _cloud.getBounds();
     float dc = 6;
 
+    offset.x = _time < 0.5 ? _time * dc : (1 - _time) * dc;
+
     float boundsWidth = bounds[1][0] - bounds[0][0];
     float boundsHeight = bounds[1][1] - bounds[0][1];
     float w = floor(boundsWidth * 0.8 / dc) * dc + 5;
-    float h = 50 + random(1) * 25;
+    float h = 75;
     float startX = -w / 2;
     float startY = 0;
 
@@ -77,7 +100,7 @@ class CloudDropping {
     float boundsWidth = bounds[1][0] - bounds[0][0];
     float boundsHeight = bounds[1][1] - bounds[0][1];
     float w = boundsWidth * 0.8;
-    float h = 50 + random(1) * 25;
+    float h = 75;
     float startX = -boundsWidth/2 + (boundsWidth - w) / 2;
     float startY = 0;
 
@@ -126,11 +149,10 @@ class CloudDropping {
 
     float c;
     int[] p = new int[2];
-    for (int i = 0; i < 1000 + random(4000); i++) {
+    for (int i = 0; i < 10 + random(4000); i++) {
       p[0] = floor(w * (0.2 + random(1) * 0.6));
       p[1] = floor((h - 150) * (0.5 + random(1) * 0.5));
-      c = brightness(canvas.pixels[p[1] * w + p[0]]);
-      c += 0.4;
+      c = 0.5 + random(0.25);
       if (c < 64) {
         for (int j = 0; j < 10 + 240 * random(1); j++) {
           if (p[1] % 3 == 0) {
