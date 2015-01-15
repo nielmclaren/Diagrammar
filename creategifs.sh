@@ -6,7 +6,7 @@ do
   then
     echo "Processing $f"
     rm "$f.gif" 2> /dev/null
-    gifsicle --delay=12 --loop --colors 256 $f/*.gif > "$f.gif"
+    gifsicle --delay=5 --loop --colors 256 $f/*.gif > "$f.gif"
   fi
 done
 
