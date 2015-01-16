@@ -1,81 +1,130 @@
 
-ArrayList<Particle> particles;
 PImage inputImg, outputImg;
+PImage[] buffers;
+int currBuffer;
 FileNamer folderNamer, fileNamer;
-
-int frame;
+int outputScale;
 
 void setup() {
-  size(540, 405);
-  smooth();
-
-  inputImg = loadImage("assets/eagle_nebula_hubble_crop.jpg");
-  outputImg = loadImage("assets/eagle_nebula_hubble_crop.jpg");
+  size(1024, 512);
+  frameRate(10);
 
   folderNamer = new FileNamer("output/export", "/");
   fileNamer = new FileNamer(folderNamer.next() + "frame", "gif");
 
   reset();
-}
-
-void reset() {
-  color c;
-  PVector pos, vel, acc;
-
-  particles = new ArrayList<Particle>();
-  outputImg = loadImage("assets/eagle_nebula_hubble_crop.jpg");
-  image(outputImg, 0, 0);
-
-  int numParticles = 100000;
-  for (int i = 0; i < numParticles; i++) {
-    pos = new PVector(randf(width), randf(height));
-    c = px(inputImg, floor(pos.x), floor(pos.y));
-    vel = new PVector(map(brightness(c), 0, 255, 1, 8), 0);
-    vel.rotate(randf(2 * PI));
-
-    Particle p = new Particle(pos, vel, c);
-    particles.add(p);
-  }
-
-  frame = 0;
-  fileNamer = new FileNamer(folderNamer.next() + "frame", "gif");
-}
-
-void clear() {
-}
-
-void draw() {
   redraw();
 }
 
-void redraw() {
-  if (frame > 10) {
-    step();
+void reset() {
+  buffers = new PImage[2];
+  currBuffer = 0;
+  outputScale = 4;
+
+  inputImg = loadImage("assets/shroomer.png");
+  outputImg = createImage(inputImg.width * outputScale, inputImg.height * outputScale, RGB);
+
+  int w = inputImg.width;
+  int h = inputImg.height;
+
+  buffers[0] = createImage(w, h, RGB);
+  buffers[1] = createImage(w, h, RGB);
+  buffers[0].loadPixels();
+  buffers[1].loadPixels();
+  inputImg.loadPixels();
+  for (int x = 0; x < w; x++) {
+    for (int y = 0; y < h; y++) {
+      int i = y * w + x;
+      buffers[0].pixels[i] = color(random(1) < 0.2 ? 255 : 0);
+      buffers[1].pixels[i] = 0;
+    }
   }
-  else {
-    frame++;
-  }
-  //save(fileNamer.next());
+  buffers[0].updatePixels();
+  buffers[1].updatePixels();
+
+  fileNamer = new FileNamer(folderNamer.next() + "frame", "gif");
+}
+
+void draw() {
+  step();
+  redraw();
+  outputImg.save(fileNamer.next());
 }
 
 void step() {
-  outputImg.loadPixels();
-  for (int i = 0; i < particles.size(); i++) {
-    Particle p = particles.get(i);
-    p.step();
-    if (!p.isActive()) {
-      particles.remove(i);
-      i--;
+  int w = buffers[0].width;
+  int h = buffers[0].height;
+
+  buffers[currBuffer].loadPixels();
+  for (int x = 0; x < w; x++) {
+    for (int y = 0; y < h; y++) {
+      step(x, y, w, h);
     }
-    else {
-      px(outputImg, floor(p._position.x), floor(p._position.y), p._color);
+  }
+  buffers[1 - currBuffer].updatePixels();
+  inputImg.updatePixels();
+
+  currBuffer = 1 - currBuffer;
+}
+
+void step(int cx, int cy, int w, int h) {
+  color c = px(buffers[currBuffer], cx, cy);
+  boolean alive = brightness(c) > 0;
+  int x0, y0, count = 0;
+  color[] neighborColors = new color[3];
+  neighborColors[0] = neighborColors[1] = neighborColors[2] = 0;
+
+  for (int x = cx - 1; x <= cx + 1; x++) {
+    x0 = x;
+    if (x0 < 0) x0 += w;
+    if (x0 >= w) x0 -= w;
+    for (int y = cy - 1; y <= cy + 1; y++) {
+      if (x == cx && y == cy) continue;
+      y0 = y;
+      if (y0 < 0) y0 += h;
+      if (y0 >= h) y0 -= h;
+
+      if (brightness(px(buffers[currBuffer], x0, y0)) > 0) {
+        if (count < 3) {
+          neighborColors[count] = px(inputImg, x0, y0);
+        }
+        count++;
+      }
+    }
+  }
+
+  boolean result = rule(alive, count);
+  px(buffers[1 - currBuffer], cx, cy, result ? color(255) : color(0));
+
+  if (alive && !result) {
+  }
+  else if (!alive && result) {
+    c = neighborColors[randi(count)];
+    px(inputImg, cx, cy, c);
+  }
+}
+
+boolean rule(boolean alive, int count) {
+  if (alive) return count > 1 && count < 4;
+  return count == 3;
+}
+
+void redraw() {
+  inputImg.loadPixels();
+  for (int x = 0; x < outputImg.width; x++) {
+    for (int y = 0; y < outputImg.height; y++) {
+      int x0 = floor(x/outputScale);
+      int y0 = floor(y/outputScale);
+      outputImg.pixels[y * outputImg.width + x] = lerpColor(inputImg.pixels[y0 * inputImg.width + x0], buffers[currBuffer].pixels[y0 * inputImg.width + x0], 0.05);
     }
   }
   outputImg.updatePixels();
 
-  pushMatrix();
-  scale(1);
   image(outputImg, 0, 0);
+
+  pushMatrix();
+  scale(8);
+  image(buffers[currBuffer], 64, 0);
   popMatrix();
 }
 
@@ -85,8 +134,7 @@ color px(PImage img, int x, int y) {
 
 void px(PImage img, int x, int y, color c) {
   if (x < 0 || x >= width || y < 0 || y >= height) return;
-  color b = px(img, x, y);
-  img.pixels[y * img.width + x] = lerpColor(b, c, 1);
+  img.pixels[y * img.width + x] = c;
 }
 
 float randf(float max) {
@@ -109,8 +157,10 @@ void keyReleased() {
   switch (key) {
     case 'e':
       reset();
+      redraw();
       break;
     case ' ':
+      step();
       redraw();
       break;
     case 'r':
