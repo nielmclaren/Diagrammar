@@ -41,19 +41,43 @@ void redraw() {
 }
 
 void step() {
+  float score;
+
   int w = inputImg.width;
   int h = inputImg.height;
 
+  drawSources(inputImg, sources);
   unvisitPixels(inputImg);
   traversePixels(inputImg, sources.get(0));
 
+  score = getDissipationScore(inputImg, sources.get(0));
+  println(score);
+
+  ArrayList<int[]> expandables = getExpandablePixels(inputImg);
+  for (int[] p : expandables) {
+    //px(inputImg, p, color(255, 255, 0));
+  }
+
+  int[] newPixel = expandables.get(randi(expandables.size()));
+  px(inputImg, newPixel, color(0));
+  unvisitPixels(inputImg);
+  traversePixels(inputImg, sources.get(0));
+
+  score = getDissipationScore(inputImg, sources.get(0));
+  println(score);
+
   for (int x = 0; x < outputImg.width; x++) {
     for (int y = 0; y < outputImg.height; y++) {
-      outputImg.pixels[outputImg.width * y + x] = inputImg.pixels[
-        w * floor(y/outputScale) + floor(x/outputScale)];
+      px(outputImg, x, y, px(inputImg, floor(x/outputScale), floor(y/outputScale)));
     }
   }
   outputImg.updatePixels();
+}
+
+void drawSources(PImage img, ArrayList<int[]> sources) {
+  for (int[] p : sources) {
+    px(img, p[0], p[1], color(255, 0, 0));
+  }
 }
 
 void unvisitPixels(PImage img) {
@@ -65,6 +89,7 @@ void unvisitPixels(PImage img) {
   }
 }
 
+// Traverse from the given source and return any potential new pixels.
 void traversePixels(PImage img, int[] source) {
   Queue<int[]> brink = new LinkedList<int[]>();
   brink.add(source);
@@ -78,7 +103,8 @@ void traversePixels(PImage img, int[] source) {
   }
 }
 
-// Traverse the given pixel and return any new pixels to add to the brink.
+// Traverse the given pixel and return any new pixels to add to the brink. Add
+// expandable pixels to the expandables array.
 ArrayList<int[]> traversePixel(PImage img, int[] p) {
   ArrayList<int[]> neighbors = getNeighbors(img, p);
   ArrayList<int[]> visitedNeighbors = filterVisited(img, neighbors);
@@ -87,10 +113,10 @@ ArrayList<int[]> traversePixel(PImage img, int[] p) {
     px(img, p, color(red(px(img, q)) - 1, 0, 0));
   }
   else {
-    px(img, p, color(0, 255, 0));
+    //px(img, p, color(254, 0, 0));
   }
 
-  return neighbors;
+  return filterUnvisited(img, neighbors);
 }
 
 ArrayList<int[]> getNeighbors(PImage img, int[] p) {
@@ -123,6 +149,40 @@ int getPixelEnergy(PImage img, int[] p) {
   return floor(red(px(img, p)));
 }
 
+ArrayList<int[]> getExpandablePixels(PImage img) {
+  // FIXME: Fetching expandable pixels needs to be done on a per-source basis.
+  ArrayList<int[]> expandables = new ArrayList<int[]>();
+  color c = color(255);
+  for (int x = 0; x < img.width; x++) {
+    for (int y = 0; y < img.height; y++) {
+      if (px(img, x, y) == c) {
+        int[] p = point(x, y);
+        ArrayList<int[]> neighbors = getNeighbors(img, p);
+        if (filterUnexpandable(img, neighbors).size() > 0) {
+          expandables.add(p);
+        }
+      }
+    }
+  }
+  return expandables;
+}
+
+float getDissipationScore(PImage img, int[] source) {
+  // FIXME: Calculating dissipation score needs to be done on a per-source basis.
+  color c = color(255);
+  float score = 0;
+  for (int x = 0; x < img.width; x++) {
+    for (int y = 0; y < img.height; y++) {
+      if (px(img, x, y) != c) {
+        int[] p = point(x, y);
+        ArrayList<int[]> neighbors = getNeighbors(img, p);
+        score += red(px(img, p)) * filterExpandable(img, neighbors).size();
+      }
+    }
+  }
+  return score;
+}
+
 ArrayList<int[]> filterVisited(PImage img, ArrayList<int[]> points) {
   ArrayList<int[]> result = new ArrayList<int[]>();
   color c;
@@ -146,13 +206,26 @@ ArrayList<int[]> filterUnvisited(PImage img, ArrayList<int[]> points) {
   return result;
 }
 
-PVector updatePos(PVector pos, color c) {
-  float h = hue(c);
-  if (h < 64) pos.x++;
-  else if (h < 128) pos.x--;
-  else if (h < 192) pos.y--;
-  else pos.y++;
-  return pos;
+ArrayList<int[]> filterExpandable(PImage img, ArrayList<int[]> points) {
+  ArrayList<int[]> result = new ArrayList<int[]>();
+  color expandableColor = color(255);
+  for (int[] p : points) {
+    if (px(img, p) == expandableColor) {
+      result.add(p);
+    }
+  }
+  return result;
+}
+
+ArrayList<int[]> filterUnexpandable(PImage img, ArrayList<int[]> points) {
+  ArrayList<int[]> result = new ArrayList<int[]>();
+  color expandableColor = color(255);
+  for (int[] p : points) {
+    if (px(img, p) != expandableColor) {
+      result.add(p);
+    }
+  }
+  return result;
 }
 
 color px(PImage img, int x, int y) {
