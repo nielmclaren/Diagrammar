@@ -1,43 +1,60 @@
 
-
+import java.lang.System;
 import java.util.LinkedList;
 import java.util.Queue;
 
 PImage inputImg, outputImg;
 int outputScale;
 ArrayList<int[]> sources;
+int currStep;
+float prevScore;
+
+ArrayList<int[]> expandables;
+int[] newCell;
+
+final color SOURCE_COLOR = color(255, 0, 0);
+final color UNVISITED_CELL_COLOR = color(0, 0, 255);
+final color UNVISITED_EMPTY_COLOR = color(255, 255, 255);
+final color VISITED_EMPTY_COLOR = color(0, 255, 0);
 
 FileNamer folderNamer, fileNamer;
 
 void setup() {
-  size(500, 405);
+  size(640, 640);
   frameRate(10);
 
-  outputScale = 4;
-  sources = new ArrayList<int[]>();
-  sources.add(point(62, 51));
+  outputScale = 8;
 
   folderNamer = new FileNamer("output/export", "/");
 
   reset();
+  step();
   redraw();
 }
 
-void draw() {}
+void draw() {
+  for (int i = 0; i < 10; i++) step();
+  redraw();
+}
 
 void reset() {
-  inputImg = loadImage("assets/test.png");
+  inputImg = createImage(80, 80, RGB);
   outputImg = createImage(
     inputImg.width * outputScale,
     inputImg.height * outputScale, RGB);
 
-  fileNamer = new FileNamer(folderNamer.next() + "frame", "gif");
-}
+  for (int i = 0; i < inputImg.width * inputImg.height; i++) {
+    inputImg.pixels[i] = color(255);
+  }
 
-void redraw() {
-  background(128);
-  step();
-  image(outputImg, 2, 2);
+  sources = new ArrayList<int[]>();
+  sources.add(point(floor(inputImg.width/2), floor(inputImg.height/2)));
+
+  newCell = sources.get(0);
+  currStep = 0;
+  prevScore = 0;
+
+  fileNamer = new FileNamer(folderNamer.next() + "frame", "gif");
 }
 
 void step() {
@@ -46,25 +63,26 @@ void step() {
   int w = inputImg.width;
   int h = inputImg.height;
 
+  px(inputImg, newCell, UNVISITED_CELL_COLOR);
   drawSources(inputImg, sources);
   unvisitPixels(inputImg);
-  traversePixels(inputImg, sources.get(0));
-
-  score = getDissipationScore(inputImg, sources.get(0));
-  println(score);
-
-  ArrayList<int[]> expandables = getExpandablePixels(inputImg);
-  for (int[] p : expandables) {
-    //px(inputImg, p, color(255, 255, 0));
+  expandables = new ArrayList<int[]>();
+  score = traversePixels(inputImg, sources.get(0), expandables);
+  if (score < prevScore + 0.5) {
+    // Undo adding the last cell. It sucked.
+    px(inputImg, newCell, UNVISITED_EMPTY_COLOR);
   }
+  else {
+    // Indicate which cell we just added.
+    px(inputImg, newCell, UNVISITED_CELL_COLOR);
+    prevScore = score;
+    println(score);
+  }
+  newCell = expandables.get(randi(expandables.size()));
+}
 
-  int[] newPixel = expandables.get(randi(expandables.size()));
-  px(inputImg, newPixel, color(0));
-  unvisitPixels(inputImg);
-  traversePixels(inputImg, sources.get(0));
-
-  score = getDissipationScore(inputImg, sources.get(0));
-  println(score);
+void redraw() {
+  background(128);
 
   for (int x = 0; x < outputImg.width; x++) {
     for (int y = 0; y < outputImg.height; y++) {
@@ -72,42 +90,61 @@ void step() {
     }
   }
   outputImg.updatePixels();
+
+  image(outputImg, 2, 2);
 }
 
 void drawSources(PImage img, ArrayList<int[]> sources) {
   for (int[] p : sources) {
-    px(img, p[0], p[1], color(255, 0, 0));
+    px(img, p[0], p[1], SOURCE_COLOR);
   }
 }
 
 void unvisitPixels(PImage img) {
   img.loadPixels();
   for (int i = 0; i < img.width * img.height; i++) {
-    if (red(img.pixels[i]) < 255) {
-      img.pixels[i] = color(0, 0, 255);
+    if (isCell(img.pixels[i])) {
+      img.pixels[i] = UNVISITED_CELL_COLOR;
+    }
+    else if (isEmpty(img.pixels[i])) {
+      img.pixels[i] = UNVISITED_EMPTY_COLOR;
     }
   }
 }
 
 // Traverse from the given source and return any potential new pixels.
-void traversePixels(PImage img, int[] source) {
+float traversePixels(PImage img, int[] source, ArrayList<int[]> expandablesResult) {
   Queue<int[]> brink = new LinkedList<int[]>();
   brink.add(source);
+
   ArrayList<int[]> newPixels;
+  float score = 0;
+
   while (brink.size() > 0) {
     int[] curr = brink.poll();
-    newPixels = traversePixel(img, curr);
-    for (int i = 0; i < newPixels.size(); i++) {
-      brink.add(newPixels.get(i));
+    ArrayList<int[]> neighbors = getRookNeighbors(img, curr);
+    traversePixel(img, curr, neighbors);
+
+    for (int[] p : neighbors) {
+      if (isUnvisitedCell(px(img, p))) {
+        brink.add(p);
+      }
+      else if (isUnvisitedEmpty(px(img, p))) {
+        // This method of calculating score is dependent on the order of traversal.
+        score += red(px(img, curr)) / 255 + 100;
+
+        expandablesResult.add(p);
+        px(img, p, VISITED_EMPTY_COLOR);
+      }
     }
   }
+
+  return score;
 }
 
-// Traverse the given pixel and return any new pixels to add to the brink. Add
-// expandable pixels to the expandables array.
-ArrayList<int[]> traversePixel(PImage img, int[] p) {
-  ArrayList<int[]> neighbors = getNeighbors(img, p);
-  ArrayList<int[]> visitedNeighbors = filterVisited(img, neighbors);
+// Traverse the given pixel.
+void traversePixel(PImage img, int[] p, ArrayList<int[]> neighbors) {
+  ArrayList<int[]> visitedNeighbors = filterVisitedCell(img, neighbors);
   if (visitedNeighbors.size() > 0) {
     int[] q = getMostEnergeticPixel(img, visitedNeighbors);
     px(img, p, color(red(px(img, q)) - 1, 0, 0));
@@ -115,11 +152,9 @@ ArrayList<int[]> traversePixel(PImage img, int[] p) {
   else {
     //px(img, p, color(254, 0, 0));
   }
-
-  return filterUnvisited(img, neighbors);
 }
 
-ArrayList<int[]> getNeighbors(PImage img, int[] p) {
+ArrayList<int[]> getQueenNeighbors(PImage img, int[] p) {
   ArrayList<int[]> neighbors = new ArrayList<int[]>();
   for (int x = p[0] - 1; x <= p[0] + 1; x++) {
     if (x < 0 || x >= img.width) continue;
@@ -129,6 +164,15 @@ ArrayList<int[]> getNeighbors(PImage img, int[] p) {
       neighbors.add(point(x, y));
     }
   }
+  return neighbors;
+}
+
+ArrayList<int[]> getRookNeighbors(PImage img, int[] p) {
+  ArrayList<int[]> neighbors = new ArrayList<int[]>();
+  if (p[0] + 1 < img.width) neighbors.add(point(p[0] + 1, p[1]));
+  if (p[0] - 1 >= 0) neighbors.add(point(p[0] - 1, p[1]));
+  if (p[1] + 1 < img.height) neighbors.add(point(p[0], p[1] + 1));
+  if (p[1] - 1 >= 0) neighbors.add(point(p[0], p[1] - 1));
   return neighbors;
 }
 
@@ -149,41 +193,7 @@ int getPixelEnergy(PImage img, int[] p) {
   return floor(red(px(img, p)));
 }
 
-ArrayList<int[]> getExpandablePixels(PImage img) {
-  // FIXME: Fetching expandable pixels needs to be done on a per-source basis.
-  ArrayList<int[]> expandables = new ArrayList<int[]>();
-  color c = color(255);
-  for (int x = 0; x < img.width; x++) {
-    for (int y = 0; y < img.height; y++) {
-      if (px(img, x, y) == c) {
-        int[] p = point(x, y);
-        ArrayList<int[]> neighbors = getNeighbors(img, p);
-        if (filterUnexpandable(img, neighbors).size() > 0) {
-          expandables.add(p);
-        }
-      }
-    }
-  }
-  return expandables;
-}
-
-float getDissipationScore(PImage img, int[] source) {
-  // FIXME: Calculating dissipation score needs to be done on a per-source basis.
-  color c = color(255);
-  float score = 0;
-  for (int x = 0; x < img.width; x++) {
-    for (int y = 0; y < img.height; y++) {
-      if (px(img, x, y) != c) {
-        int[] p = point(x, y);
-        ArrayList<int[]> neighbors = getNeighbors(img, p);
-        score += red(px(img, p)) * filterExpandable(img, neighbors).size();
-      }
-    }
-  }
-  return score;
-}
-
-ArrayList<int[]> filterVisited(PImage img, ArrayList<int[]> points) {
+ArrayList<int[]> filterVisitedCell(PImage img, ArrayList<int[]> points) {
   ArrayList<int[]> result = new ArrayList<int[]>();
   color c;
   for (int[] p : points) {
@@ -195,37 +205,58 @@ ArrayList<int[]> filterVisited(PImage img, ArrayList<int[]> points) {
   return result;
 }
 
-ArrayList<int[]> filterUnvisited(PImage img, ArrayList<int[]> points) {
+ArrayList<int[]> filterUnvisitedCell(PImage img, ArrayList<int[]> points) {
   ArrayList<int[]> result = new ArrayList<int[]>();
-  color unvisitedColor = color(0, 0, 255);
   for (int[] p : points) {
-    if (px(img, p) == unvisitedColor) {
+    if (isUnvisitedCell(px(img, p))) {
       result.add(p);
     }
   }
   return result;
 }
 
-ArrayList<int[]> filterExpandable(PImage img, ArrayList<int[]> points) {
+ArrayList<int[]> filterEmpty(PImage img, ArrayList<int[]> points) {
   ArrayList<int[]> result = new ArrayList<int[]>();
-  color expandableColor = color(255);
   for (int[] p : points) {
-    if (px(img, p) == expandableColor) {
+    if (isEmpty(px(img, p))) {
       result.add(p);
     }
   }
   return result;
 }
 
-ArrayList<int[]> filterUnexpandable(PImage img, ArrayList<int[]> points) {
+ArrayList<int[]> filterVisitedEmpty(PImage img, ArrayList<int[]> points) {
   ArrayList<int[]> result = new ArrayList<int[]>();
-  color expandableColor = color(255);
   for (int[] p : points) {
-    if (px(img, p) != expandableColor) {
+    if (isVisitedEmpty(px(img, p))) {
       result.add(p);
     }
   }
   return result;
+}
+
+boolean isSource(color c) {
+  return c == SOURCE_COLOR;
+}
+
+boolean isCell(color c) {
+  return red(c) < 255 && green(c) == 0 && blue(c) == 0;
+}
+
+boolean isUnvisitedCell(color c) {
+  return c == UNVISITED_CELL_COLOR;
+}
+
+boolean isEmpty(color c) {
+  return c == UNVISITED_EMPTY_COLOR || c == VISITED_EMPTY_COLOR;
+}
+
+boolean isVisitedEmpty(color c) {
+  return c == VISITED_EMPTY_COLOR;
+}
+
+boolean isUnvisitedEmpty(color c) {
+  return c == UNVISITED_EMPTY_COLOR;
 }
 
 color px(PImage img, int x, int y) {
@@ -279,8 +310,17 @@ void keyReleased() {
       step();
       redraw();
       break;
+    case '1':
+      for (int i = 0; i < 10; i++) step();
+      redraw();
+      break;
+    case '2':
+      for (int i = 0; i < 100; i++) step();
+      redraw();
+      break;
     case 'r':
       inputImg.save(fileNamer.next());
+      save("render.png");
       break;
   }
 }
