@@ -5,22 +5,22 @@ import java.util.Queue;
 
 PImage inputImg, outputImg;
 int outputScale;
-ArrayList<int[]> sources;
 int currStep;
-float prevScore;
+int prevScore;
 
-ArrayList<int[]> expandables;
+ArrayList<int[]> cells;
+ArrayList<int[]> brink;
 int[] newCell;
+int newCellBrinkIndex;
 
-final color SOURCE_COLOR = color(255, 0, 0);
-final color UNVISITED_CELL_COLOR = color(0, 0, 255);
-final color UNVISITED_EMPTY_COLOR = color(255, 255, 255);
-final color VISITED_EMPTY_COLOR = color(0, 255, 0);
+final color CELL_COLOR = color(0, 0, 255);
+final color EMPTY_COLOR = color(255, 255, 255);
+final color BRINK_COLOR = color(0, 255, 0);
 
 FileNamer folderNamer, fileNamer;
 
 void setup() {
-  size(640, 640);
+  size(640 + 4, 640 + 4);
   frameRate(10);
 
   outputScale = 8;
@@ -33,8 +33,6 @@ void setup() {
 }
 
 void draw() {
-  for (int i = 0; i < 10; i++) step();
-  redraw();
 }
 
 void reset() {
@@ -47,10 +45,14 @@ void reset() {
     inputImg.pixels[i] = color(255);
   }
 
-  sources = new ArrayList<int[]>();
-  sources.add(point(floor(inputImg.width/2), floor(inputImg.height/2)));
+  cells = new ArrayList<int[]>();
+  brink = new ArrayList<int[]>();
 
-  newCell = sources.get(0);
+  newCell = point(floor(inputImg.width/2), floor(inputImg.height/2));
+
+  newCellBrinkIndex = 0;
+  brink.add(newCell);
+
   currStep = 0;
   prevScore = 0;
 
@@ -58,27 +60,27 @@ void reset() {
 }
 
 void step() {
-  float score;
+  ArrayList<int[]> newBrink = filterEmpty(inputImg, getRookNeighbors(inputImg, newCell));
 
-  int w = inputImg.width;
-  int h = inputImg.height;
+  int score = brink.size() + newBrink.size() - 1;
+  if (score > prevScore) {
+    cells.add(newCell);
+    px(inputImg, newCell, CELL_COLOR);
 
-  px(inputImg, newCell, UNVISITED_CELL_COLOR);
-  drawSources(inputImg, sources);
-  unvisitPixels(inputImg);
-  expandables = new ArrayList<int[]>();
-  score = traversePixels(inputImg, sources.get(0), expandables);
-  if (score < prevScore + 0.5) {
-    // Undo adding the last cell. It sucked.
-    px(inputImg, newCell, UNVISITED_EMPTY_COLOR);
-  }
-  else {
-    // Indicate which cell we just added.
-    px(inputImg, newCell, UNVISITED_CELL_COLOR);
+    brink.remove(newCellBrinkIndex);
+    for (int[] p : newBrink) {
+      brink.add(p);
+      px(inputImg, p, BRINK_COLOR);
+    }
+
     prevScore = score;
     println(score);
   }
-  newCell = expandables.get(randi(expandables.size()));
+
+  if (newCellBrinkIndex >= 0) {
+    newCellBrinkIndex = randi(brink.size());
+    newCell = brink.get(newCellBrinkIndex);
+  }
 }
 
 void redraw() {
@@ -92,66 +94,6 @@ void redraw() {
   outputImg.updatePixels();
 
   image(outputImg, 2, 2);
-}
-
-void drawSources(PImage img, ArrayList<int[]> sources) {
-  for (int[] p : sources) {
-    px(img, p[0], p[1], SOURCE_COLOR);
-  }
-}
-
-void unvisitPixels(PImage img) {
-  img.loadPixels();
-  for (int i = 0; i < img.width * img.height; i++) {
-    if (isCell(img.pixels[i])) {
-      img.pixels[i] = UNVISITED_CELL_COLOR;
-    }
-    else if (isEmpty(img.pixels[i])) {
-      img.pixels[i] = UNVISITED_EMPTY_COLOR;
-    }
-  }
-}
-
-// Traverse from the given source and return any potential new pixels.
-float traversePixels(PImage img, int[] source, ArrayList<int[]> expandablesResult) {
-  Queue<int[]> brink = new LinkedList<int[]>();
-  brink.add(source);
-
-  ArrayList<int[]> newPixels;
-  float score = 0;
-
-  while (brink.size() > 0) {
-    int[] curr = brink.poll();
-    ArrayList<int[]> neighbors = getRookNeighbors(img, curr);
-    traversePixel(img, curr, neighbors);
-
-    for (int[] p : neighbors) {
-      if (isUnvisitedCell(px(img, p))) {
-        brink.add(p);
-      }
-      else if (isUnvisitedEmpty(px(img, p))) {
-        // This method of calculating score is dependent on the order of traversal.
-        score += red(px(img, curr)) / 255 + 100;
-
-        expandablesResult.add(p);
-        px(img, p, VISITED_EMPTY_COLOR);
-      }
-    }
-  }
-
-  return score;
-}
-
-// Traverse the given pixel.
-void traversePixel(PImage img, int[] p, ArrayList<int[]> neighbors) {
-  ArrayList<int[]> visitedNeighbors = filterVisitedCell(img, neighbors);
-  if (visitedNeighbors.size() > 0) {
-    int[] q = getMostEnergeticPixel(img, visitedNeighbors);
-    px(img, p, color(red(px(img, q)) - 1, 0, 0));
-  }
-  else {
-    //px(img, p, color(254, 0, 0));
-  }
 }
 
 ArrayList<int[]> getQueenNeighbors(PImage img, int[] p) {
@@ -176,39 +118,10 @@ ArrayList<int[]> getRookNeighbors(PImage img, int[] p) {
   return neighbors;
 }
 
-int[] getMostEnergeticPixel(PImage img, ArrayList<int[]> points) {
-  int[] mostEnergeticPixel = null;
-  int energy, highestEnergy = 0;
-  for (int[] p : points) {
-    energy = getPixelEnergy(img, p);
-    if (energy > highestEnergy) {
-      mostEnergeticPixel = p;
-      highestEnergy = energy;
-    }
-  }
-  return mostEnergeticPixel;
-}
-
-int getPixelEnergy(PImage img, int[] p) {
-  return floor(red(px(img, p)));
-}
-
-ArrayList<int[]> filterVisitedCell(PImage img, ArrayList<int[]> points) {
-  ArrayList<int[]> result = new ArrayList<int[]>();
-  color c;
-  for (int[] p : points) {
-    c = px(img, p);
-    if (red(c) > 0 && green(c) == 0 && blue(c) == 0) {
-      result.add(p);
-    }
-  }
-  return result;
-}
-
-ArrayList<int[]> filterUnvisitedCell(PImage img, ArrayList<int[]> points) {
+ArrayList<int[]> filterCell(PImage img, ArrayList<int[]> points) {
   ArrayList<int[]> result = new ArrayList<int[]>();
   for (int[] p : points) {
-    if (isUnvisitedCell(px(img, p))) {
+    if (isCell(px(img, p))) {
       result.add(p);
     }
   }
@@ -225,38 +138,26 @@ ArrayList<int[]> filterEmpty(PImage img, ArrayList<int[]> points) {
   return result;
 }
 
-ArrayList<int[]> filterVisitedEmpty(PImage img, ArrayList<int[]> points) {
+ArrayList<int[]> filterBrink(PImage img, ArrayList<int[]> points) {
   ArrayList<int[]> result = new ArrayList<int[]>();
   for (int[] p : points) {
-    if (isVisitedEmpty(px(img, p))) {
+    if (isBrink(px(img, p))) {
       result.add(p);
     }
   }
   return result;
 }
 
-boolean isSource(color c) {
-  return c == SOURCE_COLOR;
-}
-
 boolean isCell(color c) {
-  return red(c) < 255 && green(c) == 0 && blue(c) == 0;
-}
-
-boolean isUnvisitedCell(color c) {
-  return c == UNVISITED_CELL_COLOR;
+  return c == CELL_COLOR;
 }
 
 boolean isEmpty(color c) {
-  return c == UNVISITED_EMPTY_COLOR || c == VISITED_EMPTY_COLOR;
+  return c == EMPTY_COLOR;
 }
 
-boolean isVisitedEmpty(color c) {
-  return c == VISITED_EMPTY_COLOR;
-}
-
-boolean isUnvisitedEmpty(color c) {
-  return c == UNVISITED_EMPTY_COLOR;
+boolean isBrink(color c) {
+  return c == BRINK_COLOR;
 }
 
 color px(PImage img, int x, int y) {
@@ -316,6 +217,10 @@ void keyReleased() {
       break;
     case '2':
       for (int i = 0; i < 100; i++) step();
+      redraw();
+      break;
+    case '3':
+      for (int i = 0; i < 1000; i++) step();
       redraw();
       break;
     case 'r':
