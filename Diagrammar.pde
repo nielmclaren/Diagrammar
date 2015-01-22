@@ -3,7 +3,7 @@ import java.lang.System;
 import java.util.LinkedList;
 import java.util.Queue;
 
-PImage inputImg, outputImg;
+PImage inputImg, dataImg, outputImg, dataOutputImg;
 int outputScale;
 int currStep;
 int prevScore;
@@ -14,44 +14,73 @@ int[] newCell;
 int newCellBrinkIndex;
 
 final color CELL_COLOR = color(0, 0, 255);
-final color EMPTY_COLOR = color(255, 255, 255);
+final color EMPTY_COLOR = color(0);
 final color BRINK_COLOR = color(0, 255, 0);
+
+final int BRIGHTNESS_THRESHOLD = 128;
 
 FileNamer folderNamer, fileNamer;
 
 void setup() {
-  size(640 + 4, 640 + 4);
+  size(808, 404);
   frameRate(10);
 
-  outputScale = 8;
+  outputScale = 4;
 
   folderNamer = new FileNamer("output/export", "/");
 
   reset();
-  step();
   redraw();
 }
 
 void draw() {
+  for (int i = 0; i < 100; i++) step();
+  redraw();
+  //updateOutputImg();
+  //outputImg.save(fileNamer.next());
 }
 
 void reset() {
-  inputImg = createImage(80, 80, RGB);
+  inputImg = loadImage("assets/earth2.png");
+  dataImg = createImage(inputImg.width, inputImg.height, RGB);
   outputImg = createImage(
     inputImg.width * outputScale,
     inputImg.height * outputScale, RGB);
-
-  for (int i = 0; i < inputImg.width * inputImg.height; i++) {
-    inputImg.pixels[i] = color(255);
-  }
+  dataOutputImg = createImage(
+    inputImg.width * outputScale,
+    inputImg.height * outputScale, RGB);
 
   cells = new ArrayList<int[]>();
   brink = new ArrayList<int[]>();
 
-  newCell = point(floor(inputImg.width/2), floor(inputImg.height/2));
+  inputImg.loadPixels();
+  for (int x = 0; x < inputImg.width; x++) {
+    for (int y = 0; y < inputImg.height; y++) {
+      int[] p = point(x, y);
+      if (brightness(px(inputImg, x, y)) > BRIGHTNESS_THRESHOLD) {
+        px(dataImg, p, CELL_COLOR);
+        cells.add(p);
+      }
+      else if (filterBright(inputImg, getRookNeighbors(inputImg, p)).size() > 0) {
+        px(dataImg, p, BRINK_COLOR);
+        brink.add(p);
+      }
+      else {
+        px(dataImg, p, EMPTY_COLOR);
+      }
+    }
+  }
 
-  newCellBrinkIndex = 0;
-  brink.add(newCell);
+  for (int[] p : cells) {
+    px(dataImg, p, CELL_COLOR);
+  }
+  for (int[] p : brink) {
+    px(dataImg, p, BRINK_COLOR);
+  }
+  dataImg.updatePixels();
+
+  println("Cells # " + cells.size());
+  println("Brink # " + brink.size());
 
   currStep = 0;
   prevScore = 0;
@@ -60,40 +89,65 @@ void reset() {
 }
 
 void step() {
-  ArrayList<int[]> newBrink = filterEmpty(inputImg, getRookNeighbors(inputImg, newCell));
+  newCellBrinkIndex = randi(brink.size());
+  newCell = brink.get(newCellBrinkIndex);
+
+  ArrayList<int[]> newBrink = filterEmpty(dataImg, getRookNeighbors(dataImg, newCell));
 
   int score = brink.size() + newBrink.size() - 1;
   if (score > prevScore) {
     cells.add(newCell);
-    px(inputImg, newCell, CELL_COLOR);
+    px(dataImg, newCell, CELL_COLOR);
+    px(inputImg, newCell, getNeighborColor(inputImg, newCell));
 
     brink.remove(newCellBrinkIndex);
     for (int[] p : newBrink) {
       brink.add(p);
-      px(inputImg, p, BRINK_COLOR);
+      px(dataImg, p, BRINK_COLOR);
     }
 
     prevScore = score;
-    println(score);
-  }
-
-  if (newCellBrinkIndex >= 0) {
-    newCellBrinkIndex = randi(brink.size());
-    newCell = brink.get(newCellBrinkIndex);
+    println("Score: " + score);
   }
 }
 
-void redraw() {
-  background(128);
-
+void updateOutputImg() {
+  dataImg.loadPixels();
   for (int x = 0; x < outputImg.width; x++) {
     for (int y = 0; y < outputImg.height; y++) {
       px(outputImg, x, y, px(inputImg, floor(x/outputScale), floor(y/outputScale)));
     }
   }
   outputImg.updatePixels();
+}
 
-  image(outputImg, 2, 2);
+void updateDataOutputImg() {
+  inputImg.loadPixels();
+  for (int x = 0; x < dataOutputImg.width; x++) {
+    for (int y = 0; y < dataOutputImg.height; y++) {
+      px(dataOutputImg, x, y, px(dataImg, floor(x/outputScale), floor(y/outputScale)));
+    }
+  }
+  dataOutputImg.updatePixels();
+}
+
+void redraw() {
+  background(128);
+  updateOutputImg();
+  updateDataOutputImg();
+
+  image(outputImg, 4, 4);
+  image(dataOutputImg, outputImg.width + 4, 4);
+}
+
+color getNeighborColor(PImage img, int[] p) {
+  ArrayList<int[]> neighbors = filterBright(img, getQueenNeighbors(img, p));
+  if (neighbors.size() > 0) {
+    return px(img, neighbors.get(randi(neighbors.size())));
+  }
+  else {
+    return color(255, 0, 0);
+  }
 }
 
 ArrayList<int[]> getQueenNeighbors(PImage img, int[] p) {
@@ -118,7 +172,7 @@ ArrayList<int[]> getRookNeighbors(PImage img, int[] p) {
   return neighbors;
 }
 
-ArrayList<int[]> filterCell(PImage img, ArrayList<int[]> points) {
+ArrayList<int[]> filterCells(PImage img, ArrayList<int[]> points) {
   ArrayList<int[]> result = new ArrayList<int[]>();
   for (int[] p : points) {
     if (isCell(px(img, p))) {
@@ -138,10 +192,10 @@ ArrayList<int[]> filterEmpty(PImage img, ArrayList<int[]> points) {
   return result;
 }
 
-ArrayList<int[]> filterBrink(PImage img, ArrayList<int[]> points) {
+ArrayList<int[]> filterBright(PImage img, ArrayList<int[]> points) {
   ArrayList<int[]> result = new ArrayList<int[]>();
   for (int[] p : points) {
-    if (isBrink(px(img, p))) {
+    if (brightness(px(img, p)) >= BRIGHTNESS_THRESHOLD) {
       result.add(p);
     }
   }
@@ -154,10 +208,6 @@ boolean isCell(color c) {
 
 boolean isEmpty(color c) {
   return c == EMPTY_COLOR;
-}
-
-boolean isBrink(color c) {
-  return c == BRINK_COLOR;
 }
 
 color px(PImage img, int x, int y) {
@@ -224,7 +274,7 @@ void keyReleased() {
       redraw();
       break;
     case 'r':
-      inputImg.save(fileNamer.next());
+      outputImg.save(fileNamer.next());
       save("render.png");
       break;
   }
