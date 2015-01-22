@@ -3,7 +3,7 @@ import java.lang.System;
 import java.util.LinkedList;
 import java.util.Queue;
 
-PImage inputImg, dataImg, outputImg, dataOutputImg;
+PImage inputImg, dataImg, outputImg;
 int outputScale;
 int currStep;
 int prevScore;
@@ -12,6 +12,8 @@ ArrayList<int[]> cells;
 ArrayList<int[]> brink;
 int[] newCell;
 int newCellBrinkIndex;
+
+PFont titleFont, captionFont;
 
 final color CELL_COLOR = color(0, 0, 255);
 final color EMPTY_COLOR = color(0);
@@ -22,10 +24,13 @@ final int BRIGHTNESS_THRESHOLD = 128;
 FileNamer folderNamer, fileNamer;
 
 void setup() {
-  size(808, 404);
+  size(500, 400);
   frameRate(10);
 
   outputScale = 4;
+
+  titleFont = createFont("Times New Roman", 32);
+  captionFont = createFont("Times New Roman", 18);
 
   folderNamer = new FileNamer("output/export", "/");
 
@@ -34,19 +39,17 @@ void setup() {
 }
 
 void draw() {
-  for (int i = 0; i < 100; i++) step();
+  int numSteps = floor(constrain(map(brink.size(), 150, 2500, 25, 800), 25, 800));
+  for (int i = 0; i < numSteps; i++) step();
+  println(brink.size() + " " + numSteps);
   redraw();
-  //updateOutputImg();
-  //outputImg.save(fileNamer.next());
+  //saveFrame(fileNamer.next());
 }
 
 void reset() {
   inputImg = loadImage("assets/earth2.png");
   dataImg = createImage(inputImg.width, inputImg.height, RGB);
   outputImg = createImage(
-    inputImg.width * outputScale,
-    inputImg.height * outputScale, RGB);
-  dataOutputImg = createImage(
     inputImg.width * outputScale,
     inputImg.height * outputScale, RGB);
 
@@ -107,11 +110,16 @@ void step() {
     }
 
     prevScore = score;
-    println("Score: " + score);
   }
 }
 
-void updateOutputImg() {
+void redraw() {
+  String s;
+  int margin = 30;
+  int bottomMargin = 90;
+
+  background(44, 45, 77);
+
   dataImg.loadPixels();
   for (int x = 0; x < outputImg.width; x++) {
     for (int y = 0; y < outputImg.height; y++) {
@@ -119,25 +127,39 @@ void updateOutputImg() {
     }
   }
   outputImg.updatePixels();
-}
+  image(outputImg,
+    (width - outputImg.width) / 2,
+    margin + (height - bottomMargin - margin - outputImg.height)/2);
 
-void updateDataOutputImg() {
-  inputImg.loadPixels();
-  for (int x = 0; x < dataOutputImg.width; x++) {
-    for (int y = 0; y < dataOutputImg.height; y++) {
-      px(dataOutputImg, x, y, px(dataImg, floor(x/outputScale), floor(y/outputScale)));
-    }
-  }
-  dataOutputImg.updatePixels();
-}
+  noStroke();
+  fill(0);
+  rect(0, 0, width, margin);
+  rect(0, 0, margin, height);
+  rect(width - margin, 0, width, height);
+  rect(0, height - bottomMargin, width, height);
 
-void redraw() {
-  background(128);
-  updateOutputImg();
-  updateDataOutputImg();
+  stroke(255);
+  strokeWeight(1);
+  noFill();
+  rect(
+    margin - 4,
+    margin - 4,
+    width - 2 * margin + 7,
+    height - bottomMargin - margin + 7);
+  rect(
+    margin - 5,
+    margin - 5,
+    width - 2 * margin + 9,
+    height - bottomMargin - margin + 9);
 
-  image(outputImg, 4, 4);
-  image(dataOutputImg, outputImg.width + 4, 4);
+  fill(255);
+  s = "Second Law of Thermodynamics";
+  textFont(titleFont);
+  text(s, (width - textWidth(s)) / 2, height - bottomMargin + 40);
+
+  s = "The sole purpose of life is to dissipate energy.";
+  textFont(captionFont);
+  text(s, (width - textWidth(s)) / 2, height - bottomMargin + 70);
 }
 
 color getNeighborColor(PImage img, int[] p) {
