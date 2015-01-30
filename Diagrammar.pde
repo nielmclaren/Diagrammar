@@ -1,138 +1,141 @@
 
-PImage quarterNoteImg, eighthNoteImg, eighthNotePairImg, sixteenthNotePairImg;
-PImage trebleImg, bassImg, splatterImg;
+float noiseScale;
+color[] palette;
+PImage inputImg, outputImg;
+boolean showInputImg;
+FileNamer fileNamer;
 
-FileNamer folderNamer;
+int _radius;
+int _maxAttempts;
+float _attemptThreshold;
+float _maxBrightnessIncrease;
 
 void setup() {
-  size(792, 612);
-  frameRate(30);
+  size(1024, 768);
+  smooth();
 
-  quarterNoteImg = loadImage("quarter_note_dark.png");
-  eighthNoteImg = loadImage("eighth_note_dark.png");
-  eighthNotePairImg = loadImage("eighth_note_pair_dark.png");
-  sixteenthNotePairImg = loadImage("sixteenth_note_pair_dark.png");
+  PImage paletteImg = loadImage("assets/blob_colors.png");
+  palette = new color[paletteImg.width];
+  paletteImg.loadPixels();
+  for (int i = 0; i < paletteImg.width; i++) {
+    palette[i] = paletteImg.pixels[i];
+  }
 
-  trebleImg = loadImage("treble.png");
-  bassImg = loadImage("bass.png");
-  splatterImg = loadImage("splatter.png");
+  showInputImg = false;
 
-  folderNamer = new FileNamer("output/export", "/");
+  fileNamer = new FileNamer("output/export", "png");
 
-  redraw(this.g);
+  _radius = 128;
+  _maxAttempts = 3;
+  _attemptThreshold = 0.575;
+  _maxBrightnessIncrease = 64;
+
+  inputImg = createImage(width, height, RGB);
+  outputImg = createImage(width, height, RGB);
+  reset();
+  redraw();
+}
+
+void reset() {
+  clear();
+  updateInputImage(inputImg);
+}
+
+void clear() {
+  inputImg.loadPixels();
+  for (int i = 0; i < inputImg.pixels.length; i++) {
+    inputImg.pixels[i] = color(0);
+  }
+  inputImg.updatePixels();
+}
+
+void redraw() {
+  background(0);
+  updateOutputImage(inputImg, outputImg);
+  image(showInputImg ? inputImg : outputImg, 0, 0);
 }
 
 void draw() {
 }
 
-void redraw(PGraphics g) {
-  g.background(255);
-  for (int i = 0; i < 10; i++) {
-    drawBezierSequence(g, 100 + i * 70);
-  }
-
-  g.noStroke();
-  g.fill(255);
-  int numPanels = 5;
-  for (int i = 0; i < numPanels; i++) {
-    g.rect(i * width/numPanels, 0, width/numPanels/2, height);
-  }
-}
-
-void drawBezierSequence(PGraphics g, int yOffset) {
-  PVector p0, p1, delta, mid, pos;
-  PImage img;
-  float t;
-  int sign;
-
-  BezierSequence bs = getBezierSequence(yOffset);
-  BezierCurve firstCurve = bs.getCurve(0);
-  BezierCurve midCurve = bs.getCurve(2);
-  BezierCurve lastCurve = bs.getCurve(4);
-
-  g.stroke(0);
-  g.strokeWeight(1);
-  g.noFill();
-  bs.draw(g);
-
-  p0 = firstCurve.getPoint(0);
-  p1 = lastCurve.getPoint(0);
-  g.line(p0.x, p0.y, p1.x, p1.y);
-
-  p0 = firstCurve.getPoint(1);
-  p1 = lastCurve.getPoint(1);
-  g.line(p0.x, p0.y, p1.x, p1.y);
-
-  int numNotes = randi(60, 120);
-  for (int i = 0; i < numNotes; i++) {
-    t = randf();
-    sign = randi(0, 2) * 2 - 1;
-
-    p0 = firstCurve.getPoint(t);
-    p1 = lastCurve.getPoint(t);
-    delta = PVector.sub(p1, p0);
-    delta.mult(0.5);
-    delta.mult(1.5);
-    mid = PVector.add(p0, delta);
-    delta.mult(sign * random(1));
-    pos = PVector.add(mid, delta);
-
-    img = getNoteImage();
-
-    g.pushMatrix();
-    g.translate(pos.x, pos.y);
-    g.scale(randf(0.05, 0.125));
-    g.image(img, -img.width/2, -img.height/2);
-    g.popMatrix();
-  }
-
-  int numMeasures = randi(6, 18);
-  for (int i = 0; i < numMeasures; i++) {
-    t = (float)i / numMeasures;
-
-    p0 = firstCurve.getPoint(t);
-    p1 = lastCurve.getPoint(t);
-    g.line(p0.x, p0.y, p1.x, p1.y);
-  }
-}
-
-BezierSequence getBezierSequence(int yOffset) {
-  BezierSequence bs = new BezierSequence(5);
-  VectorStepper stepper0 = new VectorStepper(
-    new PVector(-100, yOffset),
-    new PVector(1, 0), 50, 75, PI * 0.005, PI * 0.005),
-    stepper1;
-  LineSegment line;
-  for (int i = 0; i < 30; i++) {
-    stepper1 = new VectorStepper(i == 0 ? stepper0.curr() : stepper0.next(), new PVector(0, -1), 25, 50, PI * 0.1, PI * 0.1);
-    line = new LineSegment(stepper1.next(), stepper1.next());
-    bs.addControl(line);
-  }
-  return bs;
-}
-
-PImage getNoteImage() {
-  float x = random(1);
-  if (x < 0.15) return sixteenthNotePairImg;
-  if (x < 0.3) return eighthNotePairImg;
-  if (x < 0.6) return eighthNoteImg;
-  return quarterNoteImg;
+void toggleInputOutput() {
+  showInputImg = !showInputImg;
+  redraw();
 }
 
 void keyReleased() {
   switch (key) {
+    case 'e':
     case ' ':
-      redraw(this.g);
+      reset();
+      redraw();
       break;
-
+    case 'c':
+      clear();
+      redraw();
+      break;
+    case 't':
+      toggleInputOutput();
+      break;
     case 'r':
-      saveFrame("render.png");
+      save(fileNamer.next());
       break;
   }
 }
 
-float randf() {
-  return random(1);
+void mouseReleased() {
+  drawAt(mouseX, mouseY);
+  redraw();
+}
+
+void drawAt(int targetX, int targetY) {
+  color c;
+  int i, r = _radius;
+  float hr = r * cos(PI/6);
+  float rSq = r*r, dSq;
+  inputImg.loadPixels();
+  for (int x = -r; x <= r; x++) {
+    if (targetX + x < 0 || targetX + x >= inputImg.width) continue;
+    for (int y = -r; y <= r; y++) {
+      if (targetY + y < 0 || targetY + y >= inputImg.height) continue;
+      dSq = x*x + y*y;
+      if (dSq > rSq) continue;
+      i = (targetY + y) * inputImg.width + (targetX + x);
+      c = inputImg.pixels[i];
+      inputImg.pixels[i] = color(max(map(sqrt(dSq), sqrt(rSq), 0, 0, 255), brightness(c)));
+    }
+  }
+  inputImg.updatePixels();
+}
+
+void updateInputImage(PImage img) {
+  img.loadPixels();
+  for (int i = 0; i < 40; i++) {
+    int x = randi(0, width);
+    int y = randi(0, height);
+    drawAt(x, y);
+  }
+  img.updatePixels();
+}
+
+void updateOutputImage(PImage in, PImage out) {
+  if (in.width != out.width || in.height != out.height) {
+    throw new Error("Input and output images must have the same dimensions.");
+  }
+
+  in.loadPixels();
+  out.loadPixels();
+  for (int x = 0; x < in.width; x++) {
+    for (int y = 0; y < in.height; y++) {
+      out.pixels[y * out.width + x] = translationFunction(in.pixels[y * in.width + x]);
+    }
+  }
+  out.updatePixels();
+}
+
+color translationFunction(color c) {
+  float b = brightness(c);
+  return palette[floor(map(b, 0, 255, 0, palette.length - 1))];
 }
 
 float randf(float low, float high) {
