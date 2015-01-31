@@ -25,8 +25,8 @@ void setup() {
 
   fileNamer = new FileNamer("output/export", "png");
 
-  _radius = 128;
-  _maxAttempts = 3;
+  _radius = 64;
+  _maxAttempts = 200;
   _attemptThreshold = 0.575;
   _maxBrightnessIncrease = 64;
 
@@ -53,6 +53,22 @@ void redraw() {
   background(0);
   updateOutputImage(inputImg, outputImg);
   image(showInputImg ? inputImg : outputImg, 0, 0);
+  
+  stroke(240);
+  
+  int space = 120;
+  for (int x = 0; x < width; x += space) {
+    line(x, 0, x + height, height);
+  }
+  for (int x = 0; x < 2 * width; x += space) {
+    line(x, 0, x - height, height);
+  }
+  for (int y = space; y < height; y += space) {
+    line(0, y, height, y + height);
+  }
+  for (int x = 0; x < width; x += space/2) {
+    line(x, 0, x, height);
+  }
 }
 
 void draw() {
@@ -110,7 +126,7 @@ void drawAt(int targetX, int targetY) {
 
 void updateInputImage(PImage img) {
   img.loadPixels();
-  for (int i = 0; i < 40; i++) {
+  for (int i = 0; i < _maxAttempts; i++) {
     int x = randi(0, width);
     int y = randi(0, height);
     drawAt(x, y);
@@ -125,9 +141,22 @@ void updateOutputImage(PImage in, PImage out) {
 
   in.loadPixels();
   out.loadPixels();
+  
+  int space = 60;
   for (int x = 0; x < in.width; x++) {
     for (int y = 0; y < in.height; y++) {
-      out.pixels[y * out.width + x] = translationFunction(in.pixels[y * in.width + x]);
+      if (y > 1*space - x && y < 3*space - x && y < 1*space + x && y > -1*space + x) {
+        out.pixels[y * out.width + x] = 0;
+      }
+      else if (y > 3*space - x && y < 5*space - x && y < 3*space + x && y > 1*space + x) {
+        out.pixels[y * out.width + x] = 0;
+      }
+      else if (y > 3*space - x && y < 5*space - x && y < -1*space + x && y > -3*space + x) {
+        out.pixels[y * out.width + x] = 0;
+      }
+      else {
+        out.pixels[y * out.width + x] = translationFunction(in.pixels[y * in.width + x]);
+      }
     }
   }
   out.updatePixels();
