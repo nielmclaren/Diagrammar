@@ -10,6 +10,8 @@ int _maxAttempts;
 float _attemptThreshold;
 float _maxBrightnessIncrease;
 
+int space;
+
 void setup() {
   size(1024, 768);
   smooth();
@@ -25,13 +27,16 @@ void setup() {
 
   fileNamer = new FileNamer("output/export", "png");
 
-  _radius = 64;
-  _maxAttempts = 200;
+  _radius = 128;
+  _maxAttempts = 100;
   _attemptThreshold = 0.575;
   _maxBrightnessIncrease = 64;
 
   inputImg = createImage(width, height, RGB);
   outputImg = createImage(width, height, RGB);
+
+  space = 240;
+
   reset();
   redraw();
 }
@@ -53,10 +58,9 @@ void redraw() {
   background(0);
   updateOutputImage(inputImg, outputImg);
   image(showInputImg ? inputImg : outputImg, 0, 0);
-  
-  stroke(240);
-  
-  int space = 120;
+
+  stroke(226);
+
   for (int x = 0; x < width; x += space) {
     line(x, 0, x + height, height);
   }
@@ -141,18 +145,15 @@ void updateOutputImage(PImage in, PImage out) {
 
   in.loadPixels();
   out.loadPixels();
-  
-  int space = 60;
+
+  int offsetX = 16;
+  int offsetY = 16;
   for (int x = 0; x < in.width; x++) {
     for (int y = 0; y < in.height; y++) {
-      if (y > 1*space - x && y < 3*space - x && y < 1*space + x && y > -1*space + x) {
-        out.pixels[y * out.width + x] = 0;
-      }
-      else if (y > 3*space - x && y < 5*space - x && y < 3*space + x && y > 1*space + x) {
-        out.pixels[y * out.width + x] = 0;
-      }
-      else if (y > 3*space - x && y < 5*space - x && y < -1*space + x && y > -3*space + x) {
-        out.pixels[y * out.width + x] = 0;
+      int m = floor((x + y) / space);
+      int n = x - y > 0 ? floor((x - y) / space) : ceil((x - y) / space) + 1;
+      if ((m + n) % 2 == 0) {
+        out.pixels[y * out.width + x] = translationFunction(in.pixels[constrain(y + offsetY, 0, in.height - 1) * in.width + constrain(x + offsetX, 0, in.width - 1)]);
       }
       else {
         out.pixels[y * out.width + x] = translationFunction(in.pixels[y * in.width + x]);
