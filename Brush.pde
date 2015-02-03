@@ -11,7 +11,6 @@ class Brush {
   }
 
   void squareBrush(int targetX, int targetY, int brushSize, color targetColor) {
-    _g.loadPixels();
     for (int x = targetX - brushSize; x <= targetX + brushSize; x++) {
       if (x < 0 || x >= _width) continue;
       for (int y = targetY - brushSize; y <= targetY + brushSize; y++) {
@@ -20,28 +19,33 @@ class Brush {
         _g.pixels[y * _width + x] = lerpColor(pixels[y * _width + x], targetColor, 0.5);
       }
     }
-    _g.updatePixels();
   }
 
   void squareFalloffBrush(int targetX, int targetY, int brushSize, color targetColor) {
-    _g.loadPixels();
+    float falloff = 0.88;
+
     for (int x = targetX - brushSize; x <= targetX + brushSize; x++) {
       if (x < 0 || x >= _width) continue;
       for (int y = targetY - brushSize; y <= targetY + brushSize; y++) {
         if (y < 0 || y >= _height) continue;
-        float dx = x - targetX;
-        float dy = y - targetY;
-        float v = map(max(sqrt(dx * dx), sqrt(dy * dy)), 0, brushSize, 255, 0);
-        color c = g.pixels[y * _width + x];
+        float dx = abs(x - targetX);
+        float dy = abs(y - targetY);
+
+        float v = max(dx, dy) / brushSize;
+        v = 1 + 1 / pow(v + falloff, 2) - 1 / pow(falloff, 2);
+        v = constrain(v, 0, 1);
+
+        color c = _g.pixels[y * _width + x];
         // FIXME: Factor out blend mode.
-        _g.pixels[y * _width + x] = color(constrain(brightness(c) + v, 0, 255));
+        _g.pixels[y * _width + x] = color(
+          constrain(red(c) + red(targetColor) * v, 0, 255),
+          constrain(green(c) + green(targetColor) * v, 0, 255),
+          constrain(blue(c) + blue(targetColor) * v, 0, 255));
       }
     }
-    _g.updatePixels();
   }
 
   void circleBrush(int targetX, int targetY, int brushSize, color targetColor) {
-    _g.loadPixels();
     for (int x = targetX - brushSize; x <= targetX + brushSize; x++) {
       if (x < 0 || x >= _width) continue;
       for (int y = targetY - brushSize; y <= targetY + brushSize; y++) {
@@ -53,28 +57,36 @@ class Brush {
         _g.pixels[y * _width + x] = lerpColor(pixels[y * _width + x], targetColor, 0.5);
       }
     }
-    _g.updatePixels();
   }
 
   void circleFalloffBrush(int targetX, int targetY, int brushSize, color targetColor) {
-    _g.loadPixels();
+    float falloff = 0.88;
+    int brushSizeSq = brushSize * brushSize;
+
     for (int x = targetX - brushSize; x <= targetX + brushSize; x++) {
       if (x < 0 || x >= _width) continue;
       for (int y = targetY - brushSize; y <= targetY + brushSize; y++) {
         if (y < 0 || y >= _height) continue;
         float dx = x - targetX;
         float dy = y - targetY;
-        float v = constrain(map(sqrt(dx * dx + dy * dy), 0, brushSize, 255, 0), 0, 255);
-        color c = g.pixels[y * _width + x];
+        float dSq = dx * dx + dy * dy;
+        if (dSq > brushSizeSq) continue;
+
+        float v = sqrt(dSq) / brushSize;
+        v = 1 + 1 / pow(v + falloff, 2) - 1 / pow(falloff, 2);
+        v = constrain(v, 0, 1);
+
+        color c = _g.pixels[y * _width + x];
         // FIXME: Factor out blend mode.
-        _g.pixels[y * _width + x] = color(constrain(brightness(c) + v, 0, 255));
+        _g.pixels[y * _width + x] = color(
+          constrain(red(c) + red(targetColor) * v, 0, 255),
+          constrain(green(c) + green(targetColor) * v, 0, 255),
+          constrain(blue(c) + blue(targetColor) * v, 0, 255));
       }
     }
-    _g.updatePixels();
   }
 
   void voronoiBrush(int targetX, int targetY, int brushSize, color targetColor) {
-    _g.loadPixels();
     for (int x = targetX - brushSize; x <= targetX + brushSize; x++) {
       if (x < 0 || x >= _width) continue;
       for (int y = targetY - brushSize; y <= targetY + brushSize; y++) {
@@ -87,7 +99,6 @@ class Brush {
         _g.pixels[y * _width + x] = color(max(brightness(c), v));
       }
     }
-    _g.updatePixels();
   }
 }
 

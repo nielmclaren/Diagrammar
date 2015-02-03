@@ -1,6 +1,6 @@
 
 color[] palette;
-PImage inputImg, outputImg;
+PGraphics inputImg, outputImg;
 
 Brush brush;
 int brushSize;
@@ -26,17 +26,15 @@ void setup() {
     palette[i] = paletteImg.pixels[i];
   }
 
-  showInputImg = false;
+  showInputImg = true;
 
   fileNamer = new FileNamer("output/export", "png");
 
-  inputImg = createImage(width, height, RGB);
-  outputImg = createImage(width, height, RGB);
+  inputImg = createGraphics(width, height);
+  outputImg = createGraphics(width, height);
 
-  brushSize = 40;
-  brushColor = color(0, 255, 0);
   brushStep = 15;
-  brush = new Brush(this.g, width, height);
+  brush = new Brush(inputImg, width, height);
 
   reset();
   redraw();
@@ -46,9 +44,22 @@ void draw() {
 }
 
 void reset() {
-  background(0);
-  for (int i = 0; i < 100; i++) {
-    drawBrush((int)random(width), (int)random(height));
+  clear();
+
+  ArrayList<Integer> brushColors = new ArrayList<Integer>();
+  brushColors.add(color(32, 32, 128));
+  brushColors.add(color(96, 32, 64));
+
+  float noiseScale = 0.03;
+  for (int i = 0; i < 2500; i++) {
+    int x = (int)random(inputImg.width);
+    int y = (int)random(inputImg.height);
+    float n = noise(x * noiseScale, y * noiseScale);
+    if (random(1) < n) {
+      brushSize = floor(randf(30, 60) * 0.25 + map(n, 1, 0, 30, 60) * 0.75);
+      brushColor = brushColors.get(floor(random(brushColors.size())));
+      drawBrush(x, y);
+    }
   }
 }
 
@@ -62,9 +73,11 @@ void clear() {
 
 void redraw() {
   if (showInputImg) {
+    inputImg.updatePixels();
     image(inputImg, 0, 0);
   }
   else {
+    outputImg.updatePixels();
     image(outputImg, 0, 0);
   }
 }
@@ -95,22 +108,26 @@ void keyReleased() {
 }
 
 void mouseReleased() {
+  println("drawBrush(" + mouseX + ", " + mouseY + ")");
   drawBrush(mouseX, mouseY);
   stepped(mouseX, mouseY);
+  redraw();
 }
 
 void mouseDragged() {
   if (stepCheck(mouseX, mouseY)) {
+    println("drawBrush(" + mouseX + ", " + mouseY + ")");
     drawBrush(mouseX, mouseY);
     stepped(mouseX, mouseY);
+    redraw();
   }
 }
 void drawBrush(int x, int y) {
-  //brush.squareBrush(inputImg, x, y, brushSize, brushColor);
-  //brush.squareFalloffBrush(inputImg, x, y, brushSize, brushColor);
-  //brush.circleBrush(inputImg, x, y, brushSize, brushColor);
+  //brush.squareBrush(x, y, brushSize, brushColor);
+  //brush.squareFalloffBrush(x, y, brushSize, brushColor);
+  //brush.circleBrush(x, y, brushSize, brushColor);
   brush.circleFalloffBrush(x, y, brushSize, brushColor);
-  //brush.voronoiBrush(inputImg, x, y, brushSize, brushColor);
+  //brush.voronoiBrush(x, y, brushSize, brushColor);
 }
 
 boolean stepCheck(int x, int y) {
