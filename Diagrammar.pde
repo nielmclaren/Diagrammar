@@ -1,16 +1,19 @@
 
-float noiseScale;
 color[] palette;
 PImage inputImg, outputImg;
+
+Brush brush;
+int brushSize;
+color brushColor;
+int brushStep;
+int prevStepX;
+int prevStepY;
+
 boolean showInputImg;
+
 FileNamer fileNamer;
 
-int _radius;
-int _maxAttempts;
-float _attemptThreshold;
-float _maxBrightnessIncrease;
 
-int space;
 
 void setup() {
   size(1024, 768);
@@ -27,23 +30,26 @@ void setup() {
 
   fileNamer = new FileNamer("output/export", "png");
 
-  _radius = 128;
-  _maxAttempts = 100;
-  _attemptThreshold = 0.575;
-  _maxBrightnessIncrease = 64;
-
   inputImg = createImage(width, height, RGB);
   outputImg = createImage(width, height, RGB);
 
-  space = 240;
+  brushSize = 40;
+  brushColor = color(0, 255, 0);
+  brushStep = 15;
+  brush = new Brush(this.g, width, height);
 
   reset();
   redraw();
 }
 
+void draw() {
+}
+
 void reset() {
-  clear();
-  updateInputImage(inputImg);
+  background(0);
+  for (int i = 0; i < 100; i++) {
+    drawBrush((int)random(width), (int)random(height));
+  }
 }
 
 void clear() {
@@ -55,27 +61,12 @@ void clear() {
 }
 
 void redraw() {
-  background(0);
-  updateOutputImage(inputImg, outputImg);
-  image(showInputImg ? inputImg : outputImg, 0, 0);
-
-  stroke(226);
-
-  for (int x = 0; x < width; x += space) {
-    line(x, 0, x + height, height);
+  if (showInputImg) {
+    image(inputImg, 0, 0);
   }
-  for (int x = 0; x < 2 * width; x += space) {
-    line(x, 0, x - height, height);
+  else {
+    image(outputImg, 0, 0);
   }
-  for (int y = space; y < height; y += space) {
-    line(0, y, height, y + height);
-  }
-  for (int x = 0; x < width; x += space/2) {
-    line(x, 0, x, height);
-  }
-}
-
-void draw() {
 }
 
 void toggleInputOutput() {
@@ -104,63 +95,33 @@ void keyReleased() {
 }
 
 void mouseReleased() {
-  drawAt(mouseX, mouseY);
-  redraw();
+  drawBrush(mouseX, mouseY);
+  stepped(mouseX, mouseY);
 }
 
-void drawAt(int targetX, int targetY) {
-  color c;
-  int i, r = _radius;
-  float hr = r * cos(PI/6);
-  float rSq = r*r, dSq;
-  inputImg.loadPixels();
-  for (int x = -r; x <= r; x++) {
-    if (targetX + x < 0 || targetX + x >= inputImg.width) continue;
-    for (int y = -r; y <= r; y++) {
-      if (targetY + y < 0 || targetY + y >= inputImg.height) continue;
-      dSq = x*x + y*y;
-      if (dSq > rSq) continue;
-      i = (targetY + y) * inputImg.width + (targetX + x);
-      c = inputImg.pixels[i];
-      inputImg.pixels[i] = color(max(map(sqrt(dSq), sqrt(rSq), 0, 0, 255), brightness(c)));
-    }
+void mouseDragged() {
+  if (stepCheck(mouseX, mouseY)) {
+    drawBrush(mouseX, mouseY);
+    stepped(mouseX, mouseY);
   }
-  inputImg.updatePixels();
+}
+void drawBrush(int x, int y) {
+  //brush.squareBrush(inputImg, x, y, brushSize, brushColor);
+  //brush.squareFalloffBrush(inputImg, x, y, brushSize, brushColor);
+  //brush.circleBrush(inputImg, x, y, brushSize, brushColor);
+  brush.circleFalloffBrush(x, y, brushSize, brushColor);
+  //brush.voronoiBrush(inputImg, x, y, brushSize, brushColor);
 }
 
-void updateInputImage(PImage img) {
-  img.loadPixels();
-  for (int i = 0; i < _maxAttempts; i++) {
-    int x = randi(0, width);
-    int y = randi(0, height);
-    drawAt(x, y);
-  }
-  img.updatePixels();
+boolean stepCheck(int x, int y) {
+  float dx = x - prevStepX;
+  float dy = y - prevStepY;
+  return brushStep * brushStep < dx * dx  +  dy * dy;
 }
 
-void updateOutputImage(PImage in, PImage out) {
-  if (in.width != out.width || in.height != out.height) {
-    throw new Error("Input and output images must have the same dimensions.");
-  }
-
-  in.loadPixels();
-  out.loadPixels();
-
-  int offsetX = 16;
-  int offsetY = 16;
-  for (int x = 0; x < in.width; x++) {
-    for (int y = 0; y < in.height; y++) {
-      int m = floor((x + y) / space);
-      int n = x - y > 0 ? floor((x - y) / space) : ceil((x - y) / space) + 1;
-      if ((m + n) % 2 == 0) {
-        out.pixels[y * out.width + x] = translationFunction(in.pixels[constrain(y + offsetY, 0, in.height - 1) * in.width + constrain(x + offsetX, 0, in.width - 1)]);
-      }
-      else {
-        out.pixels[y * out.width + x] = translationFunction(in.pixels[y * in.width + x]);
-      }
-    }
-  }
-  out.updatePixels();
+void stepped(int x, int y) {
+  prevStepX = x;
+  prevStepY = y;
 }
 
 color translationFunction(color c) {
