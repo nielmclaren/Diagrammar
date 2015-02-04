@@ -26,14 +26,16 @@ void setup() {
     palette[i] = paletteImg.pixels[i];
   }
 
-  showInputImg = true;
+  showInputImg = false;
 
   fileNamer = new FileNamer("output/export", "png");
 
   inputImg = createGraphics(width, height);
   outputImg = createGraphics(width, height);
 
+  brushColor = color(128);
   brushStep = 15;
+  brushSize = 70;
   brush = new Brush(inputImg, width, height);
 
   reset();
@@ -46,20 +48,13 @@ void draw() {
 void reset() {
   clear();
 
-  ArrayList<Integer> brushColors = new ArrayList<Integer>();
-  brushColors.add(color(32, 32, 128));
-  brushColors.add(color(96, 32, 64));
-
-  float noiseScale = 0.03;
-  for (int i = 0; i < 2500; i++) {
-    int x = (int)random(inputImg.width);
-    int y = (int)random(inputImg.height);
-    float n = noise(x * noiseScale, y * noiseScale);
-    if (random(1) < n) {
-      brushSize = floor(randf(30, 60) * 0.25 + map(n, 1, 0, 30, 60) * 0.75);
-      brushColor = brushColors.get(floor(random(brushColors.size())));
-      drawBrush(x, y);
-    }
+  int num = 8;
+  for (int i = 0; i < num; i++) {
+    int x = width/(num + 1) + floor(i * width / (num + 1));
+    float y = 1   -   (float) i / num;
+    y = 200 * y * y * y + 10;
+    drawBrush(x, height/2 + floor(y));
+    drawBrush(x, height/2 - floor(y));
   }
 }
 
@@ -77,6 +72,7 @@ void redraw() {
     image(inputImg, 0, 0);
   }
   else {
+    updateOutputImg();
     outputImg.updatePixels();
     image(outputImg, 0, 0);
   }
@@ -85,6 +81,13 @@ void redraw() {
 void toggleInputOutput() {
   showInputImg = !showInputImg;
   redraw();
+}
+
+void updateOutputImg() {
+  outputImg.loadPixels();
+  for (int i = 0; i < outputImg.width * outputImg.height; i++) {
+    outputImg.pixels[i] = translatePixel(inputImg.pixels[i]);
+  }
 }
 
 void keyReleased() {
@@ -141,7 +144,7 @@ void stepped(int x, int y) {
   prevStepY = y;
 }
 
-color translationFunction(color c) {
+color translatePixel(color c) {
   float b = brightness(c);
   return palette[floor(map(b, 0, 255, 0, palette.length - 1))];
 }
