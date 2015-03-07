@@ -1,182 +1,170 @@
 
-int margin;
-
-int nextPaletteIndex;
-ArrayList<String> paletteFilenames;
-color[] palette;
-PGraphics inputImg, outputImg;
-
-Brush brush;
-int brushSize;
-color brushColor;
-int brushStep;
-int prevStepX;
-int prevStepY;
-
-int imageX;
-int imageY;
-
-int chartRow;
-
-boolean showInputImg;
+import java.util.Iterator;
 
 FileNamer fileNamer;
-
-
+ArrayList<ControlPoint> points;
 
 void setup() {
   size(1024, 768);
   smooth();
 
-  margin = 15;
-
-  nextPaletteIndex = 0;
-  paletteFilenames = new ArrayList<String>();
-  paletteFilenames.add("assets/blobby.png");
-  paletteFilenames.add("assets/stripey.png");
-  loadNextPalette();
-
-  showInputImg = true;
-
   fileNamer = new FileNamer("output/export", "png");
-
-  inputImg = createGraphics(939, 400);
-  outputImg = createGraphics(inputImg.width, inputImg.height);
-
-  brushColor = color(128);
-  brushStep = 15;
-  brushSize = 70;
-  brush = new Brush(inputImg, inputImg.width, inputImg.height);
 
   reset();
 }
 
 void draw() {
+}
+
+void redraw() {
   background(0);
 
-  int paletteWidth = 40;
-
-  imageX = width - inputImg.width - margin;
-  imageY = height - inputImg.height - margin;
-
-  if (showInputImg) {
-    inputImg.updatePixels();
-    image(inputImg, imageX, imageY);
-  }
-  else {
-    updateOutputImg();
-    outputImg.updatePixels();
-    image(outputImg, imageX, imageY);
-  }
-
-  if (mouseHitTestImage()) {
-    chartRow = mouseY - imageY;
-  }
-
-  strokeWeight(2);
-  stroke(255, 0, 0);
-  line(imageX, imageY + chartRow, imageX + inputImg.width, imageY + chartRow);
-
-  drawChart(
-    imageX, margin,
-    inputImg.width, imageY - margin - margin);
-  drawPalette(
-    imageX - margin - paletteWidth, margin,
-    paletteWidth, imageY - margin - margin);
+  drawGradient();
+  drawControlPoints();
 }
 
-void drawChart(int chartX, int chartY, int chartWidth, int chartHeight) {
-  noStroke();
-  fill(32);
-  rect(chartX, chartY, chartWidth, chartHeight);
-
-  stroke(196);
-  strokeWeight(1);
+void drawControlPoints() {
   noFill();
-  for (int x = 0; x < inputImg.width; x++) {
-    color c = inputImg.pixels[chartRow * inputImg.width + x];
-    float b = brightness(c);
 
-    if (!showInputImg) {
-      stroke(translatePixel(c));
+  ControlPoint prevCp = null;
+  PVector p;
+  Iterator<ControlPoint> i = points.iterator();
+  while (i.hasNext()) {
+    ControlPoint cp = i.next();
+
+    stroke(0, 0, 255);
+    ellipse(cp.pos.x, cp.pos.y, 8, 8);
+
+    p = cp.dir.get();
+    p.normalize();
+    p.mult(12);
+    p.add(cp.pos);
+    line(cp.pos.x, cp.pos.y, p.x, p.y);
+
+    stroke(128);
+    p = cp.dir.get();
+    p.normalize();
+    p.rotate(PI/2);
+    p.mult(800);
+    p.add(cp.pos);
+    line(cp.pos.x, cp.pos.y, p.x, p.y);
+
+    p = cp.dir.get();
+    p.normalize();
+    p.rotate(-PI/2);
+    p.mult(800);
+    p.add(cp.pos);
+    line(cp.pos.x, cp.pos.y, p.x, p.y);
+
+    if (prevCp != null) {
+      line(prevCp.pos.x, prevCp.pos.y, cp.pos.x, cp.pos.y);
     }
 
-    line(
-      chartX + x,
-      chartY + chartHeight,
-      chartX + x,
-      chartY + chartHeight - map(b, 0, 255, 0, chartHeight));
+    prevCp = cp;
   }
 }
 
-void drawPalette(int paletteX, int paletteY, int paletteWidth, int paletteHeight) {
-  noStroke();
-  fill(32);
-  rect(paletteX, paletteY, paletteWidth, paletteHeight);
+void drawGradient() {
+  loadPixels();
 
-  for (int i = 0; i < palette.length; i++) {
-    fill(palette[i]);
-    rect(
-      paletteX, paletteY,
-      paletteWidth, paletteHeight * (1 - (float) i / palette.length));
+  for (int i = 0; i < width * height; i++) {
+    pixels[i] = color(0);
+  }
+
+  for (int i = 0; i < points.size() - 1; i++) {
+    addGradient(i);
+  }
+
+  updatePixels();
+}
+
+void addGradient(int i) {
+  if (points.size() < 2) return;
+  ControlPoint cp0 = points.get(i);
+  ControlPoint cp1 = points.get(i + 1);
+  PVector p0 = cp0.pos;
+  PVector p1 = cp1.pos;
+  PVector perp0 = new PVector(-cp0.dir.y, cp0.dir.x);
+  PVector perp1 = new PVector(-cp1.dir.y, cp1.dir.x);
+  PVector curr = new PVector();
+  PVector u, w, v = PVector.sub(p1, p0);
+  float d = v.mag();
+  float b;
+  float startValue = i % 2 == 0 ? 0 : 255;
+  float endValue = i % 2 == 0 ? 255 : 0;
+  float value;
+  PVector intersect0, intersect1;
+
+  for (int x = 0; x < width; x++) {
+    for (int y = 0; y < height; y++) {
+      curr.set(x, y);
+      u = PVector.sub(curr, p0);
+      u.set(-u.y, u.x);
+      w = PVector.mult(v, PVector.dot(u, v) / v.mag() / v.mag());
+
+      intersect0 = findIntersection(
+        x, y, x + v.x, y + v.y,
+        p0.x, p0.y, p0.x + perp0.x, p0.y + perp0.y);
+      intersect1 = findIntersection(
+        x, y, x + v.x, y + v.y,
+        p1.x, p1.y, p1.x + perp1.x, p1.y + perp1.y);
+
+      float intersectDist = PVector.sub(intersect1, intersect0).mag();
+      float intersectDist0 = PVector.sub(curr, intersect0).mag();
+      float intersectDist1 = PVector.sub(curr, intersect1).mag();
+
+      if (intersectDist0 < intersectDist && intersectDist1 < intersectDist) {
+        b = brightness(pixels[y * width + x]);
+        value = map(intersectDist0 / intersectDist, 0, 1, startValue, endValue);
+        pixels[y * width + x] = color(max(b, value));
+      }
+    }
   }
 }
 
 void reset() {
-  clear();
+  int numPoints = randi(5, 10);
+  points = new ArrayList<ControlPoint>();
+  VectorStepper stepper = new VectorStepper(
+    new PVector(width*0.1, height*0.5),
+    new PVector(1, 0),
+    100, 300);
 
-  for (int i = 0; i < 150; i++) {
-    int x = randi(0, inputImg.width);
-    int y = randi(0, inputImg.height);
-    drawBrush(x, y);
+  for (int i = 0; i < numPoints; i++) {
+    points.add(new ControlPoint(stepper.getPosition(), stepper.getDirection()));
+    stepper.next();
   }
-}
 
-void clear() {
-  inputImg.loadPixels();
-  for (int i = 0; i < inputImg.pixels.length; i++) {
-    inputImg.pixels[i] = color(0);
+  PVector d;
+  for (int i = 0; i < numPoints; i++) {
+    ControlPoint curr = points.get(i);
+    ControlPoint prev = i > 0 ? points.get(i - 1) : null;
+    ControlPoint next = i < numPoints - 1 ? points.get(i + 1) : null;
+
+    curr.dir = new PVector();
+
+    if (prev != null) {
+      d = curr.pos.get();
+      d.sub(prev.pos);
+      curr.dir.add(d);
+    }
+
+    if (next != null) {
+      d = next.pos.get();
+      d.sub(curr.pos);
+      curr.dir.add(d);
+    }
+
+    curr.dir.normalize();
   }
-  inputImg.updatePixels();
-}
 
-void toggleInputOutput() {
-  showInputImg = !showInputImg;
-}
-
-void updateOutputImg() {
-  outputImg.loadPixels();
-  for (int i = 0; i < outputImg.width * outputImg.height; i++) {
-    outputImg.pixels[i] = translatePixel(inputImg.pixels[i]);
-  }
-}
-
-void loadNextPalette() {
-  String paletteFilename = paletteFilenames.get(nextPaletteIndex);
-  nextPaletteIndex = (nextPaletteIndex + 1) % paletteFilenames.size();
-
-  PImage paletteImg = loadImage(paletteFilename);
-  palette = new color[paletteImg.width];
-  paletteImg.loadPixels();
-  for (int i = 0; i < paletteImg.width; i++) {
-    palette[i] = paletteImg.pixels[i];
-  }
+  redraw();
 }
 
 void keyReleased() {
   switch (key) {
-    case 'e':
     case ' ':
       reset();
-      break;
-    case 'c':
-      clear();
-      break;
-    case 'p':
-      loadNextPalette();
-      break;
-    case 't':
-      toggleInputOutput();
       break;
     case 'r':
       save(fileNamer.next());
@@ -184,47 +172,13 @@ void keyReleased() {
   }
 }
 
+void mousePressed() {
+}
+
 void mouseReleased() {
-  if (mouseHitTestImage()) {
-    drawBrush(mouseX - imageX, mouseY - imageY);
-    stepped(mouseX - imageX, mouseY - imageY);
-  }
 }
 
 void mouseDragged() {
-  if (mouseHitTestImage() && stepCheck(mouseX, mouseY)) {
-    drawBrush(mouseX - imageX, mouseY - imageY);
-    stepped(mouseX - imageX, mouseY - imageY);
-  }
-}
-
-void drawBrush(int x, int y) {
-  //brush.squareBrush(x, y, brushSize, brushColor);
-  //brush.squareFalloffBrush(x, y, brushSize, brushColor);
-  //brush.circleBrush(x, y, brushSize, brushColor);
-  brush.circleFalloffBrush(x, y, brushSize, brushColor);
-  //brush.voronoiBrush(x, y, brushSize, brushColor);
-}
-
-boolean mouseHitTestImage() {
-  return mouseX > imageX && mouseX < imageX + inputImg.width
-      && mouseY > imageY && mouseY < imageY + inputImg.height;
-}
-
-boolean stepCheck(int x, int y) {
-  float dx = x - prevStepX;
-  float dy = y - prevStepY;
-  return brushStep * brushStep < dx * dx  +  dy * dy;
-}
-
-void stepped(int x, int y) {
-  prevStepX = x;
-  prevStepY = y;
-}
-
-color translatePixel(color c) {
-  float b = brightness(c);
-  return palette[floor(map(b, 0, 255, 0, palette.length - 1))];
 }
 
 float randf(float low, float high) {
@@ -233,4 +187,50 @@ float randf(float low, float high) {
 
 int randi(int low, int high) {
   return low + floor(random(1) * (high - low));
+}
+
+/**
+ * Based on code by Marius Watz. Thanks, Marius!
+ * @see http://workshop.evolutionzone.com/2007/09/10/code-2d-line-intersection/
+ */
+PVector findIntersection(
+    float p1x, float p1y, float p2x, float p2y,
+    float p3x, float p3y, float p4x, float p4y) {
+  float xD1,yD1,xD2,yD2,xD3,yD3;
+  float dot,deg,len1,len2;
+  float ua,ub,div;
+
+  // calculate differences
+  xD1=p2x-p1x;
+  xD2=p4x-p3x;
+  yD1=p2y-p1y;
+  yD2=p4y-p3y;
+  xD3=p1x-p3x;
+  yD3=p1y-p3y;
+
+  // calculate the lengths of the two lines
+  len1=sqrt(xD1*xD1+yD1*yD1);
+  len2=sqrt(xD2*xD2+yD2*yD2);
+
+  // calculate angle between the two lines.
+  dot=(xD1*xD2+yD1*yD2); // dot product
+  deg=dot/(len1*len2);
+
+  // if abs(angle)==1 then the lines are parallell,
+  // so no intersection is possible
+  if(abs(deg)==1) return null;
+
+  // find intersection Pt between two lines
+  div=yD2*xD1-xD2*yD1;
+  ua=(xD2*yD3-yD2*xD3)/div;
+  ub=(xD1*yD3-yD1*xD3)/div;
+  return new PVector(p1x+ua*xD1, p1y+ua*yD1);
+}
+
+class ControlPoint {
+  PVector pos, dir;
+  ControlPoint(PVector _pos, PVector _dir) {
+    pos = _pos;
+    dir = _dir;
+  }
 }

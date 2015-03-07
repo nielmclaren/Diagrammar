@@ -90,11 +90,11 @@ class VectorStepper {
   }
 
   PVector getPosition() {
-    return pos;
+    return pos.get();
   }
 
   PVector getDirection() {
-    return dir;
+    return dir.get();
   }
 
   private void init(
