@@ -2,6 +2,7 @@
 import java.util.Iterator;
 
 FileNamer fileNamer;
+ArrayList<EmojiParticle> particles;
 
 void setup() {
   size(1024, 768);
@@ -13,10 +14,24 @@ void setup() {
 }
 
 void draw() {
+  Iterator iter = particles.iterator();
+  while (iter.hasNext()) {
+    EmojiParticle p = (EmojiParticle) iter.next();
+    p.step();
+    p.draw(this.g);
+  }
 }
 
 void reset() {
   background(0);
+
+  particles = new ArrayList<EmojiParticle>();
+
+  for (int i = 0; i < 300; i++) {
+    EmojiParticle p = new EmojiParticle(
+      new PVector(random(width), random(height)));
+    particles.add(p);
+  }
 }
 
 void keyReleased() {
