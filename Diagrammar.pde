@@ -3,7 +3,7 @@ import java.util.Iterator;
 
 FileNamer fileNamer;
 ArrayList<EmojiParticle> particles;
-PImage scanImg;
+PImage smilesImg;
 float scanScale;
 boolean showScan;
 
@@ -12,8 +12,7 @@ void setup() {
   smooth();
 
   fileNamer = new FileNamer("output/export", "png");
-  scanImg = loadImage("assets/pet.png");
-  scanScale = 2;
+  smilesImg = loadImage("assets/smiles.png");
   showScan = false;
 
   reset();
@@ -25,16 +24,20 @@ void draw() {
 void reset() {
   particles = new ArrayList<EmojiParticle>();
 
-  scanImg.loadPixels();
+  smilesImg.loadPixels();
+
+  PVector center = new PVector(width/2, height/2);
 
   for (int i = 0; i < 1000; i++) {
-    float scale = pow(1.5 * i/1000 + 1, -2);
+    float scale = pow(0.9 * i/1000 + 1, -2) * 0.5;
     for (int attempts = 0; attempts < 100; attempts++) {
-      float x = random(width);
-      float y = random(height);
+      PVector pos = new PVector(random(height * 0.4), 0);
+      pos.rotate(random(2 * PI));
+      pos.add(center);
+
       EmojiParticle p = new EmojiParticle(
-        new PVector(x, y),
-        getColor(x, y),
+        pos,
+        getColor(floor(pos.x), floor(pos.y)),
         scale);
 
       if (!hitTest(p)) {
@@ -47,15 +50,11 @@ void reset() {
 }
 
 void redraw() {
-  background(0);
+  background(255);
 
   if (showScan) {
     tint(255);
-    image(scanImg,
-      (width - scanScale * scanImg.width)/2,
-      (height - scanScale * scanImg.height)/2,
-      scanScale * scanImg.width,
-      scanScale * scanImg.height);
+    image(smilesImg, 0, 0);
   } else {
     Iterator iter = particles.iterator();
     while (iter.hasNext ()) {
@@ -97,12 +96,26 @@ int randi(int low, int high) {
   return low + floor(random(1) * (high - low));
 }
 
-color getColor(float x, float y) {
-  x = (x - (width - scanScale * scanImg.width)/2) / scanScale;
-  y = (y - (height - scanScale * scanImg.height)/2) / scanScale;
-  if (x < 0 || x >= scanImg.width) return color(0);
-  if (y < 0 || y >= scanImg.height) return color(0);
-  return scanImg.pixels[floor(y) * scanImg.width + floor(x)];
+color getColor(int x, int y) {
+  color bg[] = new color[] {
+    color(206, 119, 82),
+    color(238, 139, 102),
+    color(238, 167, 121)
+  };
+
+  color fg[] = new color[] {
+    color(41, 173, 122),
+    color(23, 172, 124),
+    color(141, 186, 128),
+    color(195, 190, 123)
+  };
+
+  if (brightness(smilesImg.pixels[y * width + x]) < 128) {
+    return fg[floor(random(fg.length))];
+  }
+  else {
+    return bg[floor(random(bg.length))];
+  }
 }
 
 boolean hitTest(EmojiParticle p) {
