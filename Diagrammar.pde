@@ -27,17 +27,20 @@ void reset() {
 
   scanImg.loadPixels();
 
-  int numCols = 70;
-  int numRows = 56;
-  for (int col = 0; col < numCols; col++) {
-    for (int row = 0; row < numRows; row++) {
-      int x = floor(col * width/numCols);
-      int y = floor(row * height/numRows);
+  for (int i = 0; i < 1000; i++) {
+    float scale = pow(1.5 * i/1000 + 1, -2);
+    for (int attempts = 0; attempts < 100; attempts++) {
+      float x = random(width);
+      float y = random(height);
       EmojiParticle p = new EmojiParticle(
         new PVector(x, y),
         getColor(x, y),
-        0.25);
-      particles.add(p);
+        scale);
+
+      if (!hitTest(p)) {
+        particles.add(p);
+        break;
+      }
     }
   }
   redraw();
@@ -100,5 +103,14 @@ color getColor(float x, float y) {
   if (x < 0 || x >= scanImg.width) return color(0);
   if (y < 0 || y >= scanImg.height) return color(0);
   return scanImg.pixels[floor(y) * scanImg.width + floor(x)];
+}
+
+boolean hitTest(EmojiParticle p) {
+  for (int i = 0; i < particles.size(); i++) {
+    if (particles.get(i).hitTest(p)) {
+      return true;
+    }
+  }
+  return false;
 }
 
