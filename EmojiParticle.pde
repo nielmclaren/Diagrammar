@@ -5,91 +5,30 @@
  */
 class EmojiParticle {
   PVector pos;
+  String emojiStr;
   PImage emojiImg;
-  color emojiColor;
-  float scale;
 
-  EmojiParticle(PVector position, color c, float s) {
+  EmojiParticle(PVector position) {
     pos = position;
-    emojiColor = c;
-    scale = s;
 
-    String emojiStr = subset[floor(random(subset.length))];
+    emojiStr = emojis[floor(random(emojis.length))];
     emojiImg = loadImage("assets/emoji/" + emojiStr + ".png");
   }
 
   void draw(PGraphics g) {
+    float s = 0.75;
     pushMatrix();
     translate(pos.x, pos.y);
-    translate(-scale*emojiImg.width/2, -scale*emojiImg.height/2);
-    scale(scale, scale);
-    tint(emojiColor);
+    translate(-s*emojiImg.width/2, -s*emojiImg.height/2);
+    scale(s, s);
+    //*
     image(emojiImg, 0, 0);
+    /*/
+    fill(emojiImg.pixels[emojiImg.pixels.length/2]);
+    rect(0, 0, 64, 64);
+    //*/
     popMatrix();
   }
-
-  boolean hitTest(EmojiParticle p) {
-    return PVector.sub(pos, p.pos).mag() < scale * 29 + p.scale * 29;
-  }
-
-  String subset[] = new String[] {
-    "smile",
-    "laughing",
-    "blush",
-    "smiley",
-    "relaxed",
-    "smirk",
-    "heart_eyes",
-    "kissing_heart",
-    "kissing_closed_eyes",
-    "flushed",
-    "relieved",
-    "satisfied",
-    "grin",
-    "wink",
-    "stuck_out_tongue_winking_eye",
-    "stuck_out_tongue_closed_eyes",
-    "grinning",
-    "kissing",
-    "kissing_smiling_eyes",
-    "stuck_out_tongue",
-    "sleeping",
-    "worried",
-    "frowning",
-    "anguished",
-    "open_mouth",
-    "grimacing",
-    "confused",
-    "hushed",
-    "expressionless",
-    "unamused",
-    "sweat_smile",
-    "sweat",
-    "disappointed_relieved",
-    "weary",
-    "pensive",
-    "disappointed",
-    "confounded",
-    "fearful",
-    "cold_sweat",
-    "persevere",
-    "cry",
-    "sob",
-    "joy",
-    "astonished",
-    "scream",
-    "tired_face",
-    "angry",
-    "rage",
-    "sleepy",
-    "yum",
-    "mask",
-    "sunglasses",
-    "dizzy_face",
-    "neutral_face",
-    "no_mouth",
-    "innocent"
-  };
 
   String emojis[] = new String[] {
     "+1",
