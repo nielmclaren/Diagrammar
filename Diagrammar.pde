@@ -2,52 +2,83 @@
 import java.util.Iterator;
 
 FileNamer fileNamer;
-PImage brainImg;
-ArrayList<EmojiParticle> particles;
+
+int numSlices = 35;
+int numCols = 50;
+int numRows = 50;
+int numBytes;
+byte[][] buffers;
+
+int spacing;
+int currSlice;
+
+boolean isPaused;
 
 void setup() {
   size(1024, 768, P3D);
   smooth();
-  lights();
 
   fileNamer = new FileNamer("output/export", "png");
-  brainImg = loadImage("assets/brainlandmarks.jpg");
 
-  reset();
+  numBytes = 8 * numRows * numSlices + 2;
+  buffers = new byte[numSlices][numBytes];
+  for (int i = 0; i < numBytes; ++i) {
+    byte b = (byte) floor(random(255));
+    for (int j = 0; j < numSlices; ++j) {
+      buffers[j][i] = b;
+    }
+  }
+
+  spacing = 10;
+  currSlice = 0;
+
+  isPaused = false;
 }
 
 void draw() {
-  image(brainImg, 0, 0);
-
-  Iterator iter = particles.iterator();
-  while (iter.hasNext()) {
-    EmojiParticle p = (EmojiParticle) iter.next();
-    p.draw(this.g);
-  }
-}
-
-void reset() {
+  camera(mouseX, mouseY, (height/2) / tan(PI/6), width/2, height/2, 0, 0, 1, 0);
   background(0);
 
-  particles = new ArrayList<EmojiParticle>();
+  lights();
+  noStroke();
+  fill(255);
+  pushMatrix();
+  translate(width/2, height/2, 0);
+  rotateY(currSlice * 2 * PI / numSlices);
 
-  particles.add(new EmojiParticle(new PVector(259, 69)));
-  particles.add(new EmojiParticle(new PVector(498, 37)));
-  particles.add(new EmojiParticle(new PVector(739, 71)));
-  particles.add(new EmojiParticle(new PVector(912, 190)));
-  particles.add(new EmojiParticle(new PVector(975, 388)));
-  particles.add(new EmojiParticle(new PVector(977, 469)));
-  particles.add(new EmojiParticle(new PVector(978, 574)));
-  particles.add(new EmojiParticle(new PVector(587, 708)));
-  particles.add(new EmojiParticle(new PVector(457, 641)));
-  particles.add(new EmojiParticle(new PVector(56, 373)));
-  particles.add(new EmojiParticle(new PVector(152, 195)));
+  for (int col = 0; col < numCols; ++col) {
+    int x = col;
+    if (x >= 25) x += 32 - 25;
+    int byteIndex = x / 8;
+    int bitIndex = x % 8;
+
+    assert(byteIndex <= 8);
+    assert(bitIndex <= 8);
+
+    for (int row = 0; row < numRows; ++row) {
+      if ((buffers[currSlice][row * 8 + byteIndex] & 1 << bitIndex) == 0) continue;
+      pushMatrix();
+      translate((col - numCols / 2) * spacing, (row - numRows / 2) * spacing, 0);
+      box(6);
+      popMatrix();
+    }
+  }
+  popMatrix();
+
+  if (!isPaused) step();
+}
+
+void step() {
+  if (++currSlice >= numSlices) currSlice = 0;
 }
 
 void keyReleased() {
   switch (key) {
+    case 'p':
+      isPaused = !isPaused;
+      break;
     case ' ':
-      reset();
+      step();
       break;
     case 'r':
       save(fileNamer.next());
