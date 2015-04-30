@@ -1,6 +1,7 @@
 
 import java.util.Iterator;
 
+FileNamer folderNamer;
 FileNamer fileNamer;
 
 int numSlices = 35;
@@ -13,12 +14,14 @@ int spacing;
 int currSlice;
 
 boolean isPaused;
+boolean isRendering;
+boolean isRenderStarted;
 
 void setup() {
-  size(1024, 768, P3D);
+  size(550, 400, P3D);
   smooth();
 
-  fileNamer = new FileNamer("output/export", "png");
+  folderNamer = new FileNamer("output/export", "/");
 
   numBytes = 8 * numRows * numSlices + 2;
   buffers = new byte[numSlices][numBytes];
@@ -29,10 +32,12 @@ void setup() {
     }
   }
 
-  spacing = 10;
+  spacing = 6;
   currSlice = 0;
 
   isPaused = false;
+  isRendering = false;
+  isRenderStarted = false;
 }
 
 void draw() {
@@ -59,17 +64,34 @@ void draw() {
       if ((buffers[currSlice][row * 8 + byteIndex] & 1 << bitIndex) == 0) continue;
       pushMatrix();
       translate((col - numCols / 2) * spacing, (row - numRows / 2) * spacing, 0);
-      box(6);
+      box(5);
       popMatrix();
     }
   }
   popMatrix();
 
   if (!isPaused) step();
+  if (isRendering) isRendering = renderSlice();
 }
 
 void step() {
   if (++currSlice >= numSlices) currSlice = 0;
+}
+
+boolean renderSlice() {
+  if (isRenderStarted) {
+    if (currSlice == 0) {
+      isRenderStarted = false;
+      return false;
+    }
+    else {
+      save(fileNamer.next());
+    }
+  }
+  else if (currSlice == 0) {
+    isRenderStarted = true;
+  }
+  return true;
 }
 
 void keyReleased() {
@@ -81,7 +103,9 @@ void keyReleased() {
       step();
       break;
     case 'r':
-      save(fileNamer.next());
+      fileNamer = new FileNamer(folderNamer.next() + "frame", "gif");
+      isRendering = true;
+      isRenderStarted = false;
       break;
   }
 }
