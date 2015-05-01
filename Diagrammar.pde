@@ -12,6 +12,9 @@ byte[][] buffers;
 
 int spacing;
 int currSlice;
+int revolutionDuration;
+int prevStepTime;
+float stepRemainder;
 
 boolean isPaused;
 boolean isRendering;
@@ -34,6 +37,9 @@ void setup() {
 
   spacing = 6;
   currSlice = 0;
+  revolutionDuration = 800;
+  prevStepTime = millis();
+  stepRemainder = 0;
 
   isPaused = false;
   isRendering = false;
@@ -75,7 +81,13 @@ void draw() {
 }
 
 void step() {
-  if (++currSlice >= numSlices) currSlice = 0;
+  int now = millis();
+  float delta = float(now - prevStepTime)  *  numSlices / revolutionDuration  +  stepRemainder;
+  int deltaFloor = floor(delta);
+  stepRemainder = delta - deltaFloor;
+  currSlice += deltaFloor;
+  while (currSlice >= numSlices) currSlice -= numSlices;
+  prevStepTime = now;
 }
 
 boolean renderSlice() {
