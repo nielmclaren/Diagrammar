@@ -5,7 +5,7 @@ import java.util.Iterator;
 FileNamer folderNamer;
 FileNamer fileNamer;
 
-int numSlices = 35;
+int numSlices = 36;
 int numCols = 50;
 int numRows = 50;
 
@@ -15,6 +15,7 @@ int numBytes;
 byte[][] buffers;
 
 int spacing;
+int prevSlice;
 int currSlice;
 int revolutionDuration;
 int prevStepTime;
@@ -33,8 +34,9 @@ void setup() {
   numBytes = 8 * numRows * numSlices + 2;
 
   spacing = 6;
+  prevSlice = 0;
   currSlice = 0;
-  revolutionDuration = 1400;
+  revolutionDuration = 50;
   prevStepTime = millis();
   stepRemainder = 0;
 
@@ -51,29 +53,33 @@ void draw() {
   lights();
   noStroke();
   fill(255);
-  pushMatrix();
-  translate(width/2, height/2, 0);
-  rotateY(currSlice * 2 * PI / numSlices  +  PI * 0.4);
 
-  for (int col = 0; col < numCols; ++col) {
-    int x = col;
-    if (x >= 25) x += 32 - 25;
-    int byteIndex = x / 8;
-    int bitIndex = x % 8;
+  for (int slice = prevSlice; slice != currSlice; slice = slice + 1 >= numSlices ? 0 : slice + 1) {
+    pushMatrix();
+    translate(width/2, height/2, 0);
+    rotateY(slice * 2 * PI / numSlices  +  PI * 0.4);
 
-    assert(byteIndex <= 8);
-    assert(bitIndex <= 8);
+    for (int col = 0; col < numCols; ++col) {
+      int x = col;
+      if (x >= 25) x += 32 - 25;
+      int byteIndex = x / 8;
+      int bitIndex = x % 8;
 
-    for (int row = 0; row < numRows; ++row) {
-      if ((buffers[currSlice][row * 8 + byteIndex] & 1 << bitIndex) == 0) continue;
-      pushMatrix();
-      translate((col - numCols / 2) * spacing, (row - numRows / 2) * spacing, 0);
-      box(5);
-      popMatrix();
+      assert(byteIndex <= 8);
+      assert(bitIndex <= 8);
+
+      for (int row = 0; row < numRows; ++row) {
+        if ((buffers[slice][row * 8 + byteIndex] & 1 << bitIndex) == 0) continue;
+        pushMatrix();
+        translate((col - numCols / 2) * spacing, (row - numRows / 2) * spacing, 0);
+        box(2);
+        popMatrix();
+      }
     }
+    popMatrix();
   }
-  popMatrix();
 
+  prevSlice = currSlice;
   if (isRendering) {
     save(fileNamer.next());
     currSlice++;
@@ -139,11 +145,32 @@ int randi(int low, int high) {
 
 boolean[][][] generateData() {
   boolean[][][] result = new boolean[numSlices][numCols][numRows];
-  int j;
+  for (int i = 0; i < numSlices; ++i) {
+    for (int c = 0; c < numCols; ++c) {
+      for (int r = 0; r < numRows; ++r) {
+        result[i][c][r] = generateData(i, c, r);
+      }
+    }
+  }
+  return result;
+}
+
+boolean generateData(int slice, int col, int row) {
+  if (row < 20) return false;
+  if (row > 30) return true;
+  if (col < 10) return false;
+  if (20 < col && col < 30) return false;
+  if (col > 40) return false;
+  if (slice % 12 < 6) return true;
+  return false;
+}
+
+boolean[][][] generateLifeData() {
+  boolean[][][] result = new boolean[numSlices][numCols][numRows];
   for (int i = 0; i < numSlices * 2; ++i) { // Run through it twice to get more stable forms.
     for (int c = 0; c < numCols; ++c) {
       for (int r = 0; r < numRows; ++r) {
-        result[i % numSlices][c][r] = i == 0 ? random(1) < 0.1 : generateData(result, (i - 1) % numSlices, c, r);
+        result[i % numSlices][c][r] = i == 0 ? random(1) < 0.1 : generateLifeData(result, (i - 1) % numSlices, c, r);
       }
     }
   }
@@ -154,7 +181,7 @@ boolean[][][] generateData() {
 // If 2-3 neighbors a cell lives on.
 // More than 3 neighbors it dies.
 // Dead cell with exactly 3 neighbors comes alive.
-boolean generateData(boolean[][][] d, int prevSlice, int c, int r) {
+boolean generateLifeData(boolean[][][] d, int prevSlice, int c, int r) {
   int numNeighbors = countNeighbors(d, prevSlice, c, r);
   if (!d[prevSlice][c][r]) return numNeighbors == 3;
   if (numNeighbors < 2) return false;
