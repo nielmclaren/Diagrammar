@@ -46,8 +46,8 @@ void drawAt(int offsetX, int offsetY, int col, int row, int size, int steps, int
   ellipse(
     offsetX + col * size + size/2,
     offsetY + row * size + size/2,
-    size * (1 - (float)i / steps),
-    size * (1 - (float)i / steps));
+    size * (1 - (float)i / steps) * 1.5,
+    size * (1 - (float)i / steps) * 1.5);
 }
 
 void keyReleased() {
@@ -58,7 +58,7 @@ void keyReleased() {
     case 'r':
       for (int i = 3; i < 15; i++) {
         reset(i * 10, 5);
-        save("output/grid_concentric_stepped_circles_" + i + ".png");
+        save("output/grid_concentric_stepped_circles_overlap_" + i + ".png");
       }
       reset(50, 5);
       save("render.png");
