@@ -28,10 +28,10 @@ void reset(int count) {
   float h = (float)height/count;
   for (int i = 0; i < count; i++) {
     if (i % 2 == 0) {
-      setGradient(0, floor(i * h), width, h, black, white, Y_AXIS);
+      setGradient(0, floor(i * h), width, h, black, white, X_AXIS);
     }
     else {
-      setGradient(0, floor(i * h), width, h, white, black, Y_AXIS);
+      setGradient(0, floor(i * h), width, h, white, black, X_AXIS);
     }
   }
 }
@@ -44,7 +44,7 @@ void keyReleased() {
     case 'r':
       for (int i = 3; i < 15; i++) {
         reset(i);
-        save("output/alt_gradient_rows_" + i + ".png");
+        save("output/altx_gradient_rows_" + i + ".png");
       }
       reset(5);
       save("render.png");
