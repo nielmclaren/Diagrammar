@@ -24,9 +24,11 @@ void draw() {
 
 void reset(int count) {
   background(0);
+  noStroke();
   float h = (float)height/count;
   for (int i = 0; i < count; i++) {
-    setGradient(0, floor(i * h), width, h, white, black, Y_AXIS);
+    fill(lerpColor(white, black, (float)i / count));
+    rect(0, i * h, width, h);
   }
 }
 
@@ -38,7 +40,7 @@ void keyReleased() {
     case 'r':
       for (int i = 3; i < 15; i++) {
         reset(i);
-        save("output/gradient_rows_" + i + ".png");
+        save("output/stepped_rows_" + i + ".png");
       }
       reset(5);
       save("render.png");
