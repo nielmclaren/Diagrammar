@@ -26,16 +26,22 @@ void reset(int size, int steps) {
   background(0);
   noStroke();
   
-  int numRows = ceil((float)height / size);
-  int numCols = ceil((float)width / size);
+  int numRows = ceil((float)height / size) * 2 + 1;
+  int numCols = ceil((float)width / size) + 1;
   
   int offsetX = (width - numCols * size) / 2;
-  int offsetY = (height - numRows * size) / 2;
+  int offsetY = (2 * height - numRows * size) / 2;
   
   for (int c = 0; c < numCols; c++) {
     for (int r = 0; r < numRows; r++) {
-      fill(random(255));
-      ellipse(offsetX + c * size + size/2, offsetY + r * size + size/2, size, size);
+      fill(lerpColor(black, white, (float)(2*c + r) / (2*numCols + numRows)));
+      int x = offsetX + c * size - (r % 2) * size/2;
+      int y = offsetY + r * size / 2;
+      quad(
+        x + size/2, y - 1,
+        x + size + 1, y + size/2,
+        x + size/2, y + size + 1,
+        x - 1, y + size/2);
     }
   }
 }
@@ -48,7 +54,7 @@ void keyReleased() {
     case 'r':
       for (int i = 3; i < 15; i++) {
         reset(i * 10, 5);
-        save("output/grid_circle_random_" + i + ".png");
+        save("output/grid_diamond_steps_" + i + ".png");
       }
       reset(50, 5);
       save("render.png");
