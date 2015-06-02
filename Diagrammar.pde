@@ -16,7 +16,7 @@ void setup() {
   black = color(0);
   white = color(255);
 
-  reset(50);
+  reset(640);
 }
 
 void draw() {
@@ -58,6 +58,9 @@ void keyReleased() {
       }
       reset(50);
       save("render.png");
+      break;
+    case 's':
+      save("output/concentric_circles.png");
       break;
   }
 }
