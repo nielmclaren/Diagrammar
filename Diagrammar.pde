@@ -32,18 +32,18 @@ void reset(int size) {
   int offsetX = (width - numCols * size) / 2;
   int offsetY = (height - numRows * size) / 2;
   
-  for (int c = 0; c < numCols; c++) {
-    for (int r = 0; r < numRows; r++) {
-      drawAt(offsetX, offsetY, c, r, size);
+  for (int i = 0; i < size/2; i++) {
+    for (int c = 0; c < numCols; c++) {
+      for (int r = 0; r < numRows; r++) {
+        drawAt(offsetX, offsetY, c, r, size, i);
+      }
     }
-  } 
+  }
 }
 
-void drawAt(int offsetX, int offsetY, int col, int row, int size) {
-  for (int i = 0; i < size/2; i++) {
-    fill(lerpColor(black, white, (float)i / size * 2));
-    ellipse(offsetX + col * size + size/2, offsetY + row * size + size/2, size - 2 * i, size - 2 * i);
-  }
+void drawAt(int offsetX, int offsetY, int col, int row, int size, int i) {
+  fill(lerpColor(black, white, (float)i / size * 2));
+  ellipse(offsetX + col * size + size/2, offsetY + row * size + size/2, 1.5 * size - 3 * i, 1.5 * size - 3 * i);
 }
 
 void keyReleased() {
@@ -54,7 +54,7 @@ void keyReleased() {
     case 'r':
       for (int i = 3; i < 15; i++) {
         reset(i * 10);
-        save("output/grid_circles_" + i + ".png");
+        save("output/grid_circles_overlap_" + i + ".png");
       }
       reset(50);
       save("render.png");
