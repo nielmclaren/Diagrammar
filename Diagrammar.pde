@@ -27,8 +27,7 @@ void reset(int count) {
   noStroke();
   float w = (float)width/count;
   for (int i = 0; i < count; i++) {
-    fill(lerpColor(white, black, (float)i / count));
-    rect(i * w, 0, w, height);
+    setGradient(floor(i * w), 0, w, height, white, black, X_AXIS);
   }
 }
 
@@ -40,7 +39,7 @@ void keyReleased() {
     case 'r':
       for (int i = 3; i < 15; i++) {
         reset(i);
-        save("output/stepped_cols_" + i + ".png");
+        save("output/gradient_cols_" + i + ".png");
       }
       reset(5);
       save("render.png");
