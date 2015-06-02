@@ -32,22 +32,12 @@ void reset(int size, int steps) {
   int offsetX = (width - numCols * size) / 2;
   int offsetY = (height - numRows * size) / 2;
   
-  for (int i = 0; i < steps; i++) {
-    for (int c = 0; c < numCols; c++) {
-      for (int r = 0; r < numRows; r++) {
-        drawAt(offsetX, offsetY, c, r, size, steps, i);
-      }
+  for (int c = 0; c < numCols; c++) {
+    for (int r = 0; r < numRows; r++) {
+      fill(lerpColor(black, white, (float)(c + r) / (numCols + numRows)));
+      rect(offsetX + c * size, offsetY + r * size, size, size);
     }
   }
-}
-
-void drawAt(int offsetX, int offsetY, int col, int row, int size, int steps, int i) {
-  fill(lerpColor(black, white, (float)i / steps));
-  ellipse(
-    offsetX + col * size + size/2,
-    offsetY + row * size + size/2,
-    size * (1 - (float)i / steps) * 1.5,
-    size * (1 - (float)i / steps) * 1.5);
 }
 
 void keyReleased() {
@@ -58,7 +48,7 @@ void keyReleased() {
     case 'r':
       for (int i = 3; i < 15; i++) {
         reset(i * 10, 5);
-        save("output/grid_concentric_stepped_circles_overlap_" + i + ".png");
+        save("output/grid_square_steps_" + i + ".png");
       }
       reset(50, 5);
       save("render.png");
