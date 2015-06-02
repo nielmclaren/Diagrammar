@@ -16,37 +16,47 @@ void setup() {
   black = color(0);
   white = color(255);
 
-  reset(5);
+  reset(30);
 }
 
 void draw() {
 }
 
-void reset(int count) {
+void reset(int size) {
   background(0);
   noStroke();
-  float h = (float)height/count;
-  for (int i = 0; i < count; i++) {
-    if (i % 2 == 0) {
-      setGradient(0, floor(i * h), width, h, black, white, X_AXIS);
+  
+  int numRows = ceil((float)height / size);
+  int numCols = ceil((float)width / size);
+  
+  int offsetX = (width - numCols * size) / 2;
+  int offsetY = (height - numRows * size) / 2;
+  
+  for (int c = 0; c < numCols; c++) {
+    for (int r = 0; r < numRows; r++) {
+      drawAt(offsetX, offsetY, c, r, size);
     }
-    else {
-      setGradient(0, floor(i * h), width, h, white, black, X_AXIS);
-    }
+  } 
+}
+
+void drawAt(int offsetX, int offsetY, int col, int row, int size) {
+  for (int i = 0; i < size/2; i++) {
+    fill(lerpColor(black, white, (float)i / size * 2));
+    rect(offsetX + col * size + i, offsetY + row * size + i, size - 2 * i, size - 2 * i);
   }
 }
 
 void keyReleased() {
   switch (key) {
     case ' ':
-      reset(randi(3, 15));
+      reset(randi(3, 15) * 10);
       break;
     case 'r':
       for (int i = 3; i < 15; i++) {
-        reset(i);
-        save("output/altx_gradient_rows_" + i + ".png");
+        reset(i * 10);
+        save("output/grid_squares_" + i + ".png");
       }
-      reset(5);
+      reset(50);
       save("render.png");
       break;
   }
@@ -69,28 +79,3 @@ int randi(int low, int high) {
   return low + floor(random(1) * (high - low));
 }
 
-/**
- * Straight out of Processing.org example.
- * @see https://processing.org/examples/lineargradient.html
- */
-void setGradient(int x, int y, float w, float h, color c1, color c2, int axis ) {
-
-  noFill();
-
-  if (axis == Y_AXIS) {  // Top to bottom gradient
-    for (int i = y; i <= y+h; i++) {
-      float inter = map(i, y, y+h, 0, 1);
-      color c = lerpColor(c1, c2, inter);
-      stroke(c);
-      line(x, i, x+w, i);
-    }
-  }  
-  else if (axis == X_AXIS) {  // Left to right gradient
-    for (int i = x; i <= x+w; i++) {
-      float inter = map(i, x, x+w, 0, 1);
-      color c = lerpColor(c1, c2, inter);
-      stroke(c);
-      line(i, y, i, y+h);
-    }
-  }
-}
