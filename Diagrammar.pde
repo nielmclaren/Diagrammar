@@ -27,7 +27,12 @@ void reset(int count) {
   noStroke();
   float w = (float)width/count;
   for (int i = 0; i < count; i++) {
-    setGradient(floor(i * w), 0, w, height, white, black, X_AXIS);
+    if (i % 2 == 0) {
+      setGradient(floor(i * w), 0, w, height, black, white, X_AXIS);
+    }
+    else {
+      setGradient(floor(i * w), 0, w, height, white, black, X_AXIS);
+    }
   }
 }
 
@@ -39,7 +44,7 @@ void keyReleased() {
     case 'r':
       for (int i = 3; i < 15; i++) {
         reset(i);
-        save("output/gradient_cols_" + i + ".png");
+        save("output/alt_gradient_cols_" + i + ".png");
       }
       reset(5);
       save("render.png");
