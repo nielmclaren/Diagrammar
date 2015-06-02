@@ -1,6 +1,5 @@
 
-color[] palette;
-PGraphics inputImg, outputImg;
+PGraphics inputImg;
 
 Brush brush;
 int brushSize;
@@ -9,34 +8,24 @@ int brushStep;
 int prevStepX;
 int prevStepY;
 
-boolean showInputImg;
-
 FileNamer fileNamer;
 
-
+float noiseScale;
 
 void setup() {
   size(1024, 768);
   smooth();
 
-  PImage paletteImg = loadImage("assets/blob_colors.png");
-  palette = new color[paletteImg.width];
-  paletteImg.loadPixels();
-  for (int i = 0; i < paletteImg.width; i++) {
-    palette[i] = paletteImg.pixels[i];
-  }
-
-  showInputImg = false;
-
   fileNamer = new FileNamer("output/export", "png");
 
   inputImg = createGraphics(width, height);
-  outputImg = createGraphics(width, height);
 
-  brushColor = color(128);
+  brushColor = color(64);
   brushStep = 15;
-  brushSize = 70;
+  brushSize = 200;
   brush = new Brush(inputImg, width, height);
+  
+  noiseScale = 0.012;
 
   reset();
   redraw();
@@ -47,14 +36,16 @@ void draw() {
 
 void reset() {
   clear();
-
-  int num = 8;
-  for (int i = 0; i < num; i++) {
-    int x = width/(num + 1) + floor(i * width / (num + 1));
-    float y = 1   -   (float) i / num;
-    y = 200 * y * y * y + 10;
-    drawBrush(x, height/2 + floor(y));
-    drawBrush(x, height/2 - floor(y));
+  
+  int x;
+  int y;
+  for (int i = 0; i < 50; i++) {
+    do {
+      x = randi(0, width);
+      y = randi(0, height);
+    }
+    while (noise(x*noiseScale, y*noiseScale) < 0.5);
+    drawBrush(x, y);
   }
 }
 
@@ -67,46 +58,24 @@ void clear() {
 }
 
 void redraw() {
-  if (showInputImg) {
-    inputImg.updatePixels();
-    image(inputImg, 0, 0);
-  }
-  else {
-    updateOutputImg();
-    outputImg.updatePixels();
-    image(outputImg, 0, 0);
-  }
-}
-
-void toggleInputOutput() {
-  showInputImg = !showInputImg;
-  redraw();
-}
-
-void updateOutputImg() {
-  outputImg.loadPixels();
-  for (int i = 0; i < outputImg.width * outputImg.height; i++) {
-    outputImg.pixels[i] = translatePixel(inputImg.pixels[i]);
-  }
+  inputImg.updatePixels();
+  image(inputImg, 0, 0);
 }
 
 void keyReleased() {
   switch (key) {
-    case 'e':
-    case ' ':
-      reset();
-      redraw();
-      break;
-    case 'c':
-      clear();
-      redraw();
-      break;
-    case 't':
-      toggleInputOutput();
-      break;
-    case 'r':
-      save(fileNamer.next());
-      break;
+  case 'e':
+  case ' ':
+    reset();
+    redraw();
+    break;
+  case 'c':
+    clear();
+    redraw();
+    break;
+  case 'r':
+    save(fileNamer.next());
+    break;
   }
 }
 
@@ -144,11 +113,6 @@ void stepped(int x, int y) {
   prevStepY = y;
 }
 
-color translatePixel(color c) {
-  float b = brightness(c);
-  return palette[floor(map(b, 0, 255, 0, palette.length - 1))];
-}
-
 float randf(float low, float high) {
   return low + random(1) * (high - low);
 }
@@ -156,3 +120,4 @@ float randf(float low, float high) {
 int randi(int low, int high) {
   return low + floor(random(1) * (high - low));
 }
+
