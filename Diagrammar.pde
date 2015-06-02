@@ -34,7 +34,7 @@ void reset(int size, int steps) {
   
   for (int c = 0; c < numCols; c++) {
     for (int r = 0; r < numRows; r++) {
-      fill(lerpColor(black, white, (float)(c + r) / (numCols + numRows)));
+      fill(random(255));
       rect(offsetX + c * size, offsetY + r * size, size, size);
     }
   }
@@ -48,7 +48,7 @@ void keyReleased() {
     case 'r':
       for (int i = 3; i < 15; i++) {
         reset(i * 10, 5);
-        save("output/grid_square_steps_" + i + ".png");
+        save("output/grid_square_random_" + i + ".png");
       }
       reset(50, 5);
       save("render.png");
