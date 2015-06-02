@@ -25,10 +25,10 @@ void draw() {
 void reset(int count) {
   background(0);
   noStroke();
-  float h = (float)height/count;
+  float w = (float)width/count;
   for (int i = 0; i < count; i++) {
     fill(lerpColor(white, black, (float)i / count));
-    rect(0, i * h, width, h);
+    rect(i * w, 0, w, height);
   }
 }
 
@@ -40,7 +40,7 @@ void keyReleased() {
     case 'r':
       for (int i = 3; i < 15; i++) {
         reset(i);
-        save("output/stepped_rows_" + i + ".png");
+        save("output/stepped_cols_" + i + ".png");
       }
       reset(5);
       save("render.png");
