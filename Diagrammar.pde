@@ -16,7 +16,7 @@ void setup() {
   black = color(0);
   white = color(255);
 
-  reset(30);
+  reset(50);
 }
 
 void draw() {
@@ -42,7 +42,7 @@ void reset(int size) {
 void drawAt(int offsetX, int offsetY, int col, int row, int size) {
   for (int i = 0; i < size/2; i++) {
     fill(lerpColor(black, white, (float)i / size * 2));
-    rect(offsetX + col * size + i, offsetY + row * size + i, size - 2 * i, size - 2 * i);
+    ellipse(offsetX + col * size + size/2, offsetY + row * size + size/2, size - 2 * i, size - 2 * i);
   }
 }
 
@@ -54,7 +54,7 @@ void keyReleased() {
     case 'r':
       for (int i = 3; i < 15; i++) {
         reset(i * 10);
-        save("output/grid_squares_" + i + ".png");
+        save("output/grid_circles_" + i + ".png");
       }
       reset(50);
       save("render.png");
