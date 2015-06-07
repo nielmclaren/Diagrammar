@@ -2,8 +2,8 @@
 import java.util.Iterator;
 
 FileNamer fileNamer;
-PImage brainImg;
 ArrayList<EmojiParticle> particles;
+int currGroupIndex;
 
 void setup() {
   size(1024, 768, P3D);
@@ -11,37 +11,43 @@ void setup() {
   lights();
 
   fileNamer = new FileNamer("output/export", "png");
-  brainImg = loadImage("assets/brainlandmarks.jpg");
 
   reset();
 }
 
-void draw() {
-  image(brainImg, 0, 0);
+void reset() {
+  particles = new ArrayList<EmojiParticle>();
+  for (int i = 0; i < 120; ++i) {
+    particles.add(new EmojiParticle(i));
+  }
+  currGroupIndex = 0;
+}
 
-  Iterator iter = particles.iterator();
+void draw() {
+  background(0);
+  Iterator iter, iter2;
+ 
+  iter = particles.iterator();
+  while (iter.hasNext()) {
+    EmojiParticle p = (EmojiParticle) iter.next();
+    p.step();
+  }
+  
+  for (int i = 0; i < particles.size() - 1; i++) {
+    EmojiParticle p = particles.get(i);
+    for (int j = i + 1; j < particles.size(); j++) {
+      EmojiParticle q = particles.get(j);
+      if (dist(p.pos.x, p.pos.y, q.pos.x, q.pos.y) < 25) {
+        handleCollision(p, q);
+      }
+    }
+  }
+  
+  iter = particles.iterator();
   while (iter.hasNext()) {
     EmojiParticle p = (EmojiParticle) iter.next();
     p.draw(this.g);
   }
-}
-
-void reset() {
-  background(0);
-
-  particles = new ArrayList<EmojiParticle>();
-
-  particles.add(new EmojiParticle(new PVector(259, 69)));
-  particles.add(new EmojiParticle(new PVector(498, 37)));
-  particles.add(new EmojiParticle(new PVector(739, 71)));
-  particles.add(new EmojiParticle(new PVector(912, 190)));
-  particles.add(new EmojiParticle(new PVector(975, 388)));
-  particles.add(new EmojiParticle(new PVector(977, 469)));
-  particles.add(new EmojiParticle(new PVector(978, 574)));
-  particles.add(new EmojiParticle(new PVector(587, 708)));
-  particles.add(new EmojiParticle(new PVector(457, 641)));
-  particles.add(new EmojiParticle(new PVector(56, 373)));
-  particles.add(new EmojiParticle(new PVector(152, 195)));
 }
 
 void keyReleased() {
@@ -62,6 +68,33 @@ void mouseReleased() {
 }
 
 void mouseDragged() {
+}
+
+void handleCollision(EmojiParticle p, EmojiParticle q) {
+  if (p.group == null) {
+    if (q.group == null) {
+      p.group = q.group = new EmojiGroup(currGroupIndex++, p, q);
+    }
+    else {
+      q.group.particles.add(p);
+      p.group = q.group;
+    }
+  }
+  else {
+    if (q.group == null) {
+      p.group.particles.add(q);
+      q.group = p.group;
+    }
+    else if (p.group.id != q.group.id) {
+      Iterator<EmojiParticle> iter = q.group.particles.iterator();
+      int i = 0;
+      while (iter.hasNext()) {
+        EmojiParticle r = (EmojiParticle) iter.next();
+        r.group = p.group;
+        p.group.particles.add(r);
+      }
+    }
+  }
 }
 
 float randf(float low, float high) {

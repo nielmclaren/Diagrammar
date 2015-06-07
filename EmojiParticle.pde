@@ -4,19 +4,39 @@
  * @see https://github.com/HenrikJoreteg/emoji-images
  */
 class EmojiParticle {
-  PVector pos;
+  int id;
+  float speed;
+  PVector pos, vel;
   String emojiStr;
   PImage emojiImg;
+  EmojiGroup group;
+  float noiseScale = 0.002;
 
-  EmojiParticle(PVector position) {
-    pos = position;
-
+  EmojiParticle(int identifier) {
+    id = identifier;
+    pos = new PVector(random(width), random(height));
+    speed = random(1, 3);
+    vel = new PVector(speed, 0);
+    vel.rotate(random(2 * PI));
+    
     emojiStr = emojis[floor(random(emojis.length))];
     emojiImg = loadImage("assets/emoji/" + emojiStr + ".png");
+    
+    group = null;
+  }
+  
+  void step() {
+    if (group == null || group.leader == this) {
+      //vel.rotate((noise(pos.x * noiseScale, pos.y * noiseScale) * 2 - 1) * 0.05);
+      pos.add(vel);
+    }
+    else {
+      pos.add(group.leader.vel);
+    }
   }
 
   void draw(PGraphics g) {
-    float s = 0.75;
+    float s = 0.4;
     pushMatrix();
     translate(pos.x, pos.y);
     translate(-s*emojiImg.width/2, -s*emojiImg.height/2);
@@ -28,6 +48,10 @@ class EmojiParticle {
     rect(0, 0, 64, 64);
     //*/
     popMatrix();
+  }
+  
+  String toString() {
+    return "[EmojiParticle " + str(id) + "]";
   }
 
   String emojis[] = new String[] {
