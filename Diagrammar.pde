@@ -4,6 +4,7 @@ import java.util.Iterator;
 FileNamer fileNamer;
 ArrayList<EmojiParticle> particles;
 int currGroupIndex;
+EmojiPlayer player;
 
 void setup() {
   size(1024, 768, P3D);
@@ -17,7 +18,11 @@ void setup() {
 
 void reset() {
   particles = new ArrayList<EmojiParticle>();
-  for (int i = 0; i < 120; ++i) {
+  
+  player = new EmojiPlayer(0);
+  particles.add(player);
+  
+  for (int i = 1; i < 120; ++i) {
     particles.add(new EmojiParticle(i));
   }
   currGroupIndex = 0;
@@ -50,7 +55,13 @@ void draw() {
   }
 }
 
+void keyPressed() {
+  player.keyPressed();
+}
+
 void keyReleased() {
+  player.keyReleased();
+  
   switch (key) {
     case ' ':
       reset();
@@ -58,6 +69,7 @@ void keyReleased() {
     case 'r':
       save(fileNamer.next());
       break;
+      default:
   }
 }
 
@@ -95,6 +107,9 @@ void handleCollision(EmojiParticle p, EmojiParticle q) {
       }
     }
   }
+  
+  if (p == player) p.group.leader = p;
+  else if (q == player) p.group.leader = q;
 }
 
 float randf(float low, float high) {

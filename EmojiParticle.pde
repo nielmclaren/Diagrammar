@@ -15,14 +15,28 @@ class EmojiParticle {
   EmojiParticle(int identifier) {
     id = identifier;
     pos = new PVector(random(width), random(height));
-    speed = random(1, 3);
+    speed = random(0.1, 1.5);
     vel = new PVector(speed, 0);
     vel.rotate(random(2 * PI));
     
-    emojiStr = emojis[floor(random(emojis.length))];
-    emojiImg = loadImage("assets/emoji/" + emojiStr + ".png");
+    initEmoji();
     
     group = null;
+  }
+  
+  EmojiParticle(int identifier, PVector position, PVector velocity) {
+    id = identifier;
+    pos = position;
+    vel = velocity;
+    
+    initEmoji();
+    
+    group = null;
+  }
+  
+  void initEmoji() {
+    emojiStr = emojis[floor(random(emojis.length))];
+    emojiImg = loadImage("assets/emoji/" + emojiStr + ".png");
   }
   
   void step() {
