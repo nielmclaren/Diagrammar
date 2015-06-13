@@ -68,7 +68,7 @@ void draw() {
 }
 
 EmojiParticle place(EmojiParticle p) {
-  while (collision(p)) {
+  while (dist(player.pos.x, player.pos.y, p.pos.x, p.pos.y) < 250 || collision(p)) {
     p.pos.x = random(width);
     p.pos.y = random(height);
   }
