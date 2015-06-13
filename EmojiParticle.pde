@@ -11,6 +11,7 @@ class EmojiParticle {
   PImage emojiImg;
   EmojiGroup group;
   float noiseScale = 0.002;
+  float radius = 12.5;
 
   EmojiParticle(int identifier) {
     id = identifier;
@@ -63,7 +64,18 @@ class EmojiParticle {
     //*/
     popMatrix();
   }
-  
+
+  boolean collision(EmojiParticle p) {
+    return dist(pos.x, pos.y, p.pos.x, p.pos.y) < radius + p.radius;
+  }
+
+  boolean visible() {
+    return pos.x + radius > 0
+      && pos.x - radius < width
+      && pos.y + radius > 0
+      && pos.y - radius < height;
+  }
+
   String toString() {
     return "[EmojiParticle " + str(id) + "]";
   }

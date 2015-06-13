@@ -2,6 +2,7 @@
 import java.util.Iterator;
 
 FileNamer fileNamer;
+int minParticles;
 ArrayList<EmojiParticle> particles;
 int currGroupIndex;
 EmojiPlayer player;
@@ -10,6 +11,8 @@ void setup() {
   size(1024, 768, P3D);
   smooth();
   lights();
+  
+  minParticles = 120;
 
   fileNamer = new FileNamer("output/export", "png");
 
@@ -22,8 +25,8 @@ void reset() {
   player = new EmojiPlayer(0);
   particles.add(player);
   
-  for (int i = 1; i < 120; ++i) {
-    particles.add(new EmojiParticle(i));
+  for (int i = 1; i < minParticles; ++i) {
+    particles.add(place(new EmojiParticle(i)));
   }
   currGroupIndex = 0;
 }
@@ -31,7 +34,16 @@ void reset() {
 void draw() {
   background(0);
   Iterator iter, iter2;
- 
+
+  // FIXME: Implement using iterator?
+  for (int i = 1; i < particles.size(); i++) {
+    EmojiParticle p = particles.get(i);
+    if (!p.visible()) {
+      particles.set(i, place(new EmojiParticle(i)));
+      i--;
+    }
+  }
+
   iter = particles.iterator();
   while (iter.hasNext()) {
     EmojiParticle p = (EmojiParticle) iter.next();
@@ -42,7 +54,7 @@ void draw() {
     EmojiParticle p = particles.get(i);
     for (int j = i + 1; j < particles.size(); j++) {
       EmojiParticle q = particles.get(j);
-      if (dist(p.pos.x, p.pos.y, q.pos.x, q.pos.y) < 25) {
+      if (p.collision(q)) {
         handleCollision(p, q);
       }
     }
@@ -53,6 +65,25 @@ void draw() {
     EmojiParticle p = (EmojiParticle) iter.next();
     p.draw(this.g);
   }
+}
+
+EmojiParticle place(EmojiParticle p) {
+  while (collision(p)) {
+    p.pos.x = random(width);
+    p.pos.y = random(height);
+  }
+  return p;
+}
+
+boolean collision(EmojiParticle p) {
+  Iterator iter = particles.iterator();
+  while (iter.hasNext()) {
+    EmojiParticle q = (EmojiParticle) iter.next();
+    if (p.id != q.id && p.collision(q)) {
+      return true;
+    }
+  }
+  return false;
 }
 
 void keyPressed() {
