@@ -4,30 +4,83 @@
  * @see https://github.com/HenrikJoreteg/emoji-images
  */
 class EmojiParticle {
-  PVector pos;
+  EmojiWorld world;
+  int id;
+  float speed;
+  PVector pos, vel;
   String emojiStr;
   PImage emojiImg;
+  EmojiGroup group;
+  float noiseScale = 0.002;
+  float radius = 12.5;
 
-  EmojiParticle(PVector position) {
+  EmojiParticle(EmojiWorld emojiWorld, int identifier) {
+    world = emojiWorld;
+    id = identifier;
+    pos = new PVector(random(world.worldWidth), random(world.worldHeight));
+    speed = random(0.1, 1.5);
+    vel = new PVector(speed, 0);
+    vel.rotate(random(2 * PI));
+    
+    initEmoji();
+    
+    group = null;
+  }
+  
+  EmojiParticle(EmojiWorld emojiWorld, int identifier, PVector position, PVector velocity) {
+    world = emojiWorld;
+    id = identifier;
     pos = position;
-
+    vel = velocity;
+    
+    initEmoji();
+    
+    group = null;
+  }
+  
+  void initEmoji() {
     emojiStr = emojis[floor(random(emojis.length))];
     emojiImg = loadImage("assets/emoji/" + emojiStr + ".png");
   }
+  
+  void step() {
+    if (group == null || group.leader == this) {
+      //vel.rotate((noise(pos.x * noiseScale, pos.y * noiseScale) * 2 - 1) * 0.05);
+      pos.add(vel);
+    }
+    else {
+      pos.add(group.leader.vel);
+    }
+  }
 
   void draw(PGraphics g) {
-    float s = 0.75;
-    pushMatrix();
-    translate(pos.x, pos.y);
-    translate(-s*emojiImg.width/2, -s*emojiImg.height/2);
-    scale(s, s);
+    float s = 0.4;
+    g.pushMatrix();
+    g.translate(pos.x, pos.y);
+    g.translate(-s*emojiImg.width/2, -s*emojiImg.height/2);
+    g.scale(s, s);
     //*
-    image(emojiImg, 0, 0);
+    g.image(emojiImg, 0, 0);
     /*/
     fill(emojiImg.pixels[emojiImg.pixels.length/2]);
     rect(0, 0, 64, 64);
     //*/
-    popMatrix();
+    g.popMatrix();
+  }
+
+  boolean collision(EmojiParticle p) {
+    return dist(pos.x, pos.y, p.pos.x, p.pos.y) < radius + p.radius;
+  }
+
+  boolean visible() {
+    return pos.x + radius > 0
+      && pos.x - radius < world.worldWidth
+      && pos.y + radius > 0
+      && pos.y - radius < world.worldHeight;
+  }
+
+  String toString() {
+    return "[EmojiParticle " + str(id) + "]";
   }
 
   String emojis[] = new String[] {

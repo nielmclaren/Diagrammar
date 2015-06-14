@@ -10,73 +10,41 @@ int prevStepX;
 int prevStepY;
 
 FileNamer fileNamer;
-
-float noiseScale;
+EmojiWorld world;
 
 void setup() {
   size(1024, 768);
   smooth();
 
   fileNamer = new FileNamer("output/export", "png");
-
-  inputImg = createGraphics(width, height);
-
-  brushColor = color(64);
-  brushStep = 15;
-  brushSize = 200;
-  brush = new Brush(inputImg, width, height);
-  
-  noiseScale = 0.012;
-
-  reset();
-  redraw();
+  world = new EmojiWorld(2 * width, 2 * height);
 }
 
 void draw() {
-}
-
-void reset() {
-  clear();
+  background(0);
+  world.step();
   
-  int x;
-  int y;
-  for (int i = 0; i < 50; i++) {
-    do {
-      x = randi(0, width);
-      y = randi(0, height);
-    }
-    while (noise(x*noiseScale, y*noiseScale) < 0.5);
-    drawBrush(x, y);
-  }
+  pushMatrix();
+  translate(width/2 - world.player.pos.x, height/2 - world.player.pos.y);
+  world.draw(this.g);
+  popMatrix();
 }
 
-void clear() {
-  inputImg.loadPixels();
-  for (int i = 0; i < inputImg.pixels.length; i++) {
-    inputImg.pixels[i] = color(0);
-  }
-  inputImg.updatePixels();
-}
-
-void redraw() {
-  inputImg.updatePixels();
-  image(inputImg, 0, 0);
+void keyPressed() {
+  world.keyPressed();
 }
 
 void keyReleased() {
+  world.keyReleased();
+  
   switch (key) {
-  case 'e':
-  case ' ':
-    reset();
-    redraw();
-    break;
-  case 'c':
-    clear();
-    redraw();
-    break;
-  case 'r':
-    save(fileNamer.next());
-    break;
+    case ' ':
+      world.reset();
+      break;
+    case 'r':
+      save(fileNamer.next());
+      break;
+      default:
   }
 }
 
