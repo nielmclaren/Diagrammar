@@ -4,6 +4,7 @@
  * @see https://github.com/HenrikJoreteg/emoji-images
  */
 class EmojiParticle {
+  EmojiWorld world;
   int id;
   float speed;
   PVector pos, vel;
@@ -13,9 +14,10 @@ class EmojiParticle {
   float noiseScale = 0.002;
   float radius = 12.5;
 
-  EmojiParticle(int identifier) {
+  EmojiParticle(EmojiWorld emojiWorld, int identifier) {
+    world = emojiWorld;
     id = identifier;
-    pos = new PVector(random(width), random(height));
+    pos = new PVector(random(world.worldWidth), random(world.worldHeight));
     speed = random(0.1, 1.5);
     vel = new PVector(speed, 0);
     vel.rotate(random(2 * PI));
@@ -25,7 +27,8 @@ class EmojiParticle {
     group = null;
   }
   
-  EmojiParticle(int identifier, PVector position, PVector velocity) {
+  EmojiParticle(EmojiWorld emojiWorld, int identifier, PVector position, PVector velocity) {
+    world = emojiWorld;
     id = identifier;
     pos = position;
     vel = velocity;
@@ -52,17 +55,17 @@ class EmojiParticle {
 
   void draw(PGraphics g) {
     float s = 0.4;
-    pushMatrix();
-    translate(pos.x, pos.y);
-    translate(-s*emojiImg.width/2, -s*emojiImg.height/2);
-    scale(s, s);
+    g.pushMatrix();
+    g.translate(pos.x, pos.y);
+    g.translate(-s*emojiImg.width/2, -s*emojiImg.height/2);
+    g.scale(s, s);
     //*
-    image(emojiImg, 0, 0);
+    g.image(emojiImg, 0, 0);
     /*/
     fill(emojiImg.pixels[emojiImg.pixels.length/2]);
     rect(0, 0, 64, 64);
     //*/
-    popMatrix();
+    g.popMatrix();
   }
 
   boolean collision(EmojiParticle p) {
@@ -71,9 +74,9 @@ class EmojiParticle {
 
   boolean visible() {
     return pos.x + radius > 0
-      && pos.x - radius < width
+      && pos.x - radius < world.worldWidth
       && pos.y + radius > 0
-      && pos.y - radius < height;
+      && pos.y - radius < world.worldHeight;
   }
 
   String toString() {

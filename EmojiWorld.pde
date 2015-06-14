@@ -2,17 +2,22 @@
 class EmojiWorld {
   int worldWidth;
   int worldHeight;
+  int gridSize;
+  int numRows;
+  int numCols;
 
   int minParticles;
   ArrayList<EmojiParticle> particles;
   int currGroupIndex;
   EmojiPlayer player;
-  PGraphics graphics;
 
-  EmojiWorld(PGraphics g, int w, int h) {
-    graphics = g;
+  EmojiWorld(int w, int h) {
     worldWidth = w;
     worldHeight = h;
+    
+    gridSize = 20;
+    numCols = ceil(worldWidth / 20);
+    numRows = ceil(worldHeight / 20);
 
     minParticles = 80;
 
@@ -22,30 +27,29 @@ class EmojiWorld {
   void reset() {
     particles = new ArrayList<EmojiParticle>();
 
-    player = new EmojiPlayer(0);
+    player = new EmojiPlayer(this, 0, new PVector(worldWidth/2, worldHeight/2));
     particles.add(player);
 
     for (int i = 1; i < minParticles; ++i) {
-      particles.add(place(new EmojiParticle(i)));
+      particles.add(place(new EmojiParticle(this, i)));
     }
     currGroupIndex = 0;
   }
-
-  void draw() {
-    background(0);
-    Iterator<EmojiParticle> iter, iter2;
+  
+  void step() {
+    Iterator<EmojiParticle> iter;
 
     // FIXME: Implement using iterator?
     for (int i = 1; i < particles.size (); i++) {
       EmojiParticle p = particles.get(i);
       if (!p.visible()) {
-        particles.set(i, place(new EmojiParticle(i)));
+        particles.set(i, place(new EmojiParticle(this, i)));
         i--;
       }
     }
 
     iter = particles.iterator();
-    while (iter.hasNext ()) {
+    while (iter.hasNext()) {
       EmojiParticle p = iter.next();
       p.step();
     }
@@ -59,11 +63,28 @@ class EmojiWorld {
         }
       }
     }
+  }
 
-    iter = particles.iterator();
-    while (iter.hasNext ()) {
+  void draw(PGraphics g) {
+    g.background(0);
+    drawGrid(g);
+
+    g.fill(255);
+    Iterator<EmojiParticle> iter = particles.iterator();
+    while (iter.hasNext()) {
       EmojiParticle p = iter.next();
-      p.draw(graphics);
+      p.draw(g);
+    }
+  }
+  
+  void drawGrid(PGraphics g) {
+    g.stroke(32);
+    g.noFill();
+    for (int c = 0; c <= numCols; c++) {
+      g.line(c * gridSize, 0, c * gridSize, worldHeight);
+    }
+    for (int r = 0; r <= numRows; r++) {
+      g.line(0, r * gridSize, worldWidth, r * gridSize);
     }
   }
 

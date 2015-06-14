@@ -5,17 +5,22 @@ FileNamer fileNamer;
 EmojiWorld world;
 
 void setup() {
-  size(1024, 768, P3D);
+  size(1024, 768);
   smooth();
   lights();
 
   fileNamer = new FileNamer("output/export", "png");
-  world = new EmojiWorld(this.g, width, height);
+  world = new EmojiWorld(2 * width, 2 * height);
 }
 
 void draw() {
   background(0);
-  world.draw();
+  world.step();
+  
+  pushMatrix();
+  translate(width/2 - world.player.pos.x, height/2 - world.player.pos.y);
+  world.draw(this.g);
+  popMatrix();
 }
 
 void keyPressed() {

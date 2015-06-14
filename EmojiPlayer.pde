@@ -9,8 +9,8 @@ class EmojiPlayer extends EmojiParticle {
   boolean isLeft;
   boolean isRight;
   
-  EmojiPlayer(int identifier) {
-    super(identifier, new PVector(width/2, height/2), new PVector());
+  EmojiPlayer(EmojiWorld emojiWorld, int identifier, PVector position) {
+    super(emojiWorld, identifier, position, new PVector());
     
     maxVelocity = 4;
     acceleration = 0.1;
