@@ -13,6 +13,28 @@ class EmojiGroup {
     particles.add(q);
   }
   
+  void draw(PGraphics g) {
+    Rectangle b = getBounds();
+    if (b != null) {
+      g.rect(b.x, b.y, b.w, b.h);
+    }
+  }
+  
+  Rectangle getBounds() {
+    Rectangle bounds = null;
+    Iterator<EmojiParticle> iter = particles.iterator();
+    while (iter.hasNext()) {
+      EmojiParticle p = iter.next();
+      if (bounds == null) {
+        bounds = p.getBounds();
+      }
+      else {
+        bounds = bounds.union(p.getBounds());
+      }
+    }
+    return bounds;
+  }
+  
   String toString() {
     return "[EmojiGroup " + str(id) + "]";
   }

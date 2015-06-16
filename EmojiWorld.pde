@@ -3,11 +3,13 @@ class EmojiWorld {
   int worldWidth;
   int worldHeight;
   int gridSize;
-  int numRows;
   int numCols;
+  int numRows;
+  boolean isPaused;
 
   int minParticles;
   ArrayList<EmojiParticle> particles;
+  ArrayList<EmojiGroup> groups;
   int currGroupIndex;
   EmojiPlayer player;
 
@@ -22,6 +24,7 @@ class EmojiWorld {
     worldWidth = numCols * gridSize;
     worldHeight = numRows * gridSize;
 
+    isPaused = false;
     minParticles = 160;
 
     reset();
@@ -29,6 +32,7 @@ class EmojiWorld {
 
   void reset() {
     particles = new ArrayList<EmojiParticle>();
+    groups = new ArrayList<EmojiGroup>();
 
     player = new EmojiPlayer(this, 0, new PVector(worldWidth/2, worldHeight/2));
     particles.add(player);
@@ -40,11 +44,24 @@ class EmojiWorld {
   }
   
   void step() {
+    if (isPaused) return;
+    
     Iterator<EmojiParticle> iter;
+    
+    for (int i = 0; i < groups.size(); i++) {
+      EmojiGroup group = groups.get(i);
+      if (group.particles.size() <= 0) {
+        groups.remove(i);
+        i--;
+      }
+    }
 
     for (int i = 1; i < particles.size(); i++) {
       EmojiParticle p = particles.get(i);
       if (!p.visible() && (p.group == null || p.group.leader != player)) {
+        if (p.group != null) {
+          p.group.particles.remove(p);
+        }
         particles.set(i, place(new EmojiParticle(this, i)));
         i--;
       }
@@ -83,6 +100,15 @@ class EmojiWorld {
       EmojiParticle p = iter.next();
       p.draw(g);
     }
+    
+    g.noFill();
+    g.stroke(255, 128, 128);
+    g.strokeWeight(4);
+    Iterator<EmojiGroup> groupIter = groups.iterator();
+    while (groupIter.hasNext()) {
+      EmojiGroup group = groupIter.next();
+      group.draw(g);
+    }
   }
   
   void drawGrid(PGraphics g) {
@@ -117,6 +143,7 @@ class EmojiWorld {
     if (p.group == null) {
       if (q.group == null) {
         p.group = q.group = new EmojiGroup(currGroupIndex++, p, q);
+        groups.add(p.group);
       } else {
         q.group.particles.add(p);
         p.group = q.group;
@@ -130,6 +157,7 @@ class EmojiWorld {
         int i = 0;
         while (iter.hasNext ()) {
           EmojiParticle r = iter.next();
+          groups.remove(r.group);
           r.group = p.group;
           p.group.particles.add(r);
         }
