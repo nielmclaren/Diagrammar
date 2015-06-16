@@ -44,7 +44,10 @@ void keyReleased() {
     case 'r':
       save(fileNamer.next());
       break;
-      default:
+    case 'p':
+      world.isPaused = !world.isPaused;
+      break;
+    default:
   }
 }
 
