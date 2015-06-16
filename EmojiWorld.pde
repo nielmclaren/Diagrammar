@@ -18,8 +18,11 @@ class EmojiWorld {
     gridSize = 20;
     numCols = ceil(worldWidth / 20);
     numRows = ceil(worldHeight / 20);
+    
+    worldWidth = numCols * gridSize;
+    worldHeight = numRows * gridSize;
 
-    minParticles = 80;
+    minParticles = 160;
 
     reset();
   }
@@ -39,10 +42,9 @@ class EmojiWorld {
   void step() {
     Iterator<EmojiParticle> iter;
 
-    // FIXME: Implement using iterator?
-    for (int i = 1; i < particles.size (); i++) {
+    for (int i = 1; i < particles.size(); i++) {
       EmojiParticle p = particles.get(i);
-      if (!p.visible()) {
+      if (!p.visible() && (p.group == null || p.group.leader != player)) {
         particles.set(i, place(new EmojiParticle(this, i)));
         i--;
       }
@@ -66,10 +68,16 @@ class EmojiWorld {
   }
 
   void draw(PGraphics g) {
-    g.background(0);
+    g.background(255);
+    
+    g.noFill();
+    g.stroke(224);
+    g.strokeWeight(1);
     drawGrid(g);
+    
+    g.strokeWeight(4);
+    g.rect(0, 0, worldWidth, worldHeight);
 
-    g.fill(255);
     Iterator<EmojiParticle> iter = particles.iterator();
     while (iter.hasNext()) {
       EmojiParticle p = iter.next();
@@ -78,8 +86,6 @@ class EmojiWorld {
   }
   
   void drawGrid(PGraphics g) {
-    g.stroke(32);
-    g.noFill();
     for (int c = 0; c <= numCols; c++) {
       g.line(c * gridSize, 0, c * gridSize, worldHeight);
     }
