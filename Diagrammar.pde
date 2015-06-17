@@ -9,7 +9,7 @@ void setup() {
   smooth();
 
   fileNamer = new FileNamer("output/export", "png");
-  world = new EmojiWorld(2 * width, 2 * height);
+  world = new EmojiWorld(2 * width, 2 * height, 160);
 }
 
 void draw() {

@@ -5,12 +5,20 @@ class EmojiGroup {
   EmojiParticle leader;
   ArrayList<EmojiParticle> particles;
   
+  EmojiGroup(int identifier, EmojiParticle p) {
+    init(identifier, p);
+  }
+  
   EmojiGroup(int identifier, EmojiParticle p, EmojiParticle q) {
+    init(identifier, p);
+    particles.add(q);
+  }
+  
+  void init(int identifier, EmojiParticle p) {
     id = identifier;
     leader = p;
     particles = new ArrayList<EmojiParticle>();
     particles.add(p);
-    particles.add(q);
   }
   
   void draw(PGraphics g) {

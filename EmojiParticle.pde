@@ -44,33 +44,6 @@ class EmojiParticle {
   }
   
   void step() {
-    if (group != null && group.leader == world.player) {
-      if (pos.x - radius < 0) {
-        pos.x = radius;
-        if (vel.x < 0) {
-          vel.x = -vel.x;
-        }
-      }
-      if (pos.x + radius > world.worldWidth) {
-        pos.x = world.worldWidth - radius;
-        if (vel.x > 0) {
-          vel.x = -vel.x;
-        }
-      }
-      if (pos.y - radius < 0) {
-        pos.y = radius;
-        if (vel.y < 0) {
-          vel.y = -vel.y;
-        }
-      }
-      if (pos.y + radius > world.worldHeight) {
-        pos.y = world.worldHeight - radius;
-        if (vel.y > 0) {
-          vel.y = -vel.y;
-        }
-      }
-    }
-      
     if (group == null || group.leader == this) {
       //vel.rotate((noise(pos.x * noiseScale, pos.y * noiseScale) * 2 - 1) * 0.05);
       pos.add(vel);
