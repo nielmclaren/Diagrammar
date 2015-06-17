@@ -7,13 +7,14 @@ class EmojiWorld {
   int numRows;
   boolean isPaused;
 
-  int minParticles;
+  int numParticles;
   ArrayList<EmojiParticle> particles;
   ArrayList<EmojiGroup> groups;
   int currGroupIndex;
   EmojiPlayer player;
+  EmojiGroup playerGroup;
 
-  EmojiWorld(int w, int h) {
+  EmojiWorld(int w, int h, int nParticles) {
     worldWidth = w;
     worldHeight = h;
     
@@ -25,7 +26,7 @@ class EmojiWorld {
     worldHeight = numRows * gridSize;
 
     isPaused = false;
-    minParticles = 160;
+    numParticles = nParticles;
 
     reset();
   }
@@ -33,14 +34,16 @@ class EmojiWorld {
   void reset() {
     particles = new ArrayList<EmojiParticle>();
     groups = new ArrayList<EmojiGroup>();
+    currGroupIndex = 0;
 
     player = new EmojiPlayer(this, 0, new PVector(worldWidth/2, worldHeight/2));
+    playerGroup = new EmojiGroup(currGroupIndex++, player);
+    player.group = playerGroup;
     particles.add(player);
 
-    for (int i = 1; i < minParticles; ++i) {
+    for (int i = 1; i < numParticles; ++i) {
       particles.add(place(new EmojiParticle(this, i)));
     }
-    currGroupIndex = 0;
   }
   
   void step() {
@@ -66,6 +69,8 @@ class EmojiWorld {
         i--;
       }
     }
+    
+    stepPlayerGroup();
 
     iter = particles.iterator();
     while (iter.hasNext()) {
@@ -80,6 +85,34 @@ class EmojiWorld {
         if (p.collision(q)) {
           handleCollision(p, q);
         }
+      }
+    }
+  }
+  
+  void stepPlayerGroup() {
+    Rectangle b = playerGroup.getBounds();
+    if (b.x < 0) {
+      player.pos.x -= b.x;
+      if (player.vel.x < 0) {
+        player.vel.x = -player.vel.x;
+      }
+    }
+    if (b.x + b.w > world.worldWidth) {
+      player.pos.x -= b.x + b.w - world.worldWidth;
+      if (player.vel.x > 0) {
+        player.vel.x = -player.vel.x;
+      }
+    }
+    if (b.y < 0) {
+      player.pos.y -= b.y;
+      if (player.vel.y < 0) {
+        player.vel.y = -player.vel.y;
+      }
+    }
+    if (b.y + b.h > world.worldHeight) {
+      player.pos.y -= b.y + b.h - world.worldHeight;
+      if (player.vel.y > 0) {
+        player.vel.y = -player.vel.y;
       }
     }
   }
@@ -99,15 +132,6 @@ class EmojiWorld {
     while (iter.hasNext()) {
       EmojiParticle p = iter.next();
       p.draw(g);
-    }
-    
-    g.noFill();
-    g.stroke(255, 128, 128);
-    g.strokeWeight(4);
-    Iterator<EmojiGroup> groupIter = groups.iterator();
-    while (groupIter.hasNext()) {
-      EmojiGroup group = groupIter.next();
-      group.draw(g);
     }
   }
   
@@ -144,7 +168,8 @@ class EmojiWorld {
       if (q.group == null) {
         p.group = q.group = new EmojiGroup(currGroupIndex++, p, q);
         groups.add(p.group);
-      } else {
+      }
+      else {
         q.group.particles.add(p);
         p.group = q.group;
       }
@@ -153,6 +178,12 @@ class EmojiWorld {
         p.group.particles.add(q);
         q.group = p.group;
       } else if (p.group.id != q.group.id) {
+        if (q.group == playerGroup) {
+          EmojiParticle temp = p;
+          p = q;
+          q = temp;
+        }
+        
         Iterator<EmojiParticle> iter = q.group.particles.iterator();
         int i = 0;
         while (iter.hasNext ()) {
