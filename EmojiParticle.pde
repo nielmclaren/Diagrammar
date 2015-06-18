@@ -93,11 +93,11 @@ class EmojiParticle {
     return dist(_pos.x, _pos.y, p._pos.x, p._pos.y) < _radius + p.getRadius();
   }
 
-  boolean visible() {
-    return _pos.x + _radius > 0
-      && _pos.x - _radius < world.worldWidth
-      && _pos.y + _radius > 0
-      && _pos.y - _radius < world.worldHeight;
+  boolean isOutOfBounds() {
+    return _pos.x - _radius <= 0
+      || _pos.x + _radius >= world.worldWidth
+      || _pos.y - _radius <= 0
+      || _pos.y + _radius >= world.worldHeight;
   }
 
   String toString() {

@@ -62,7 +62,7 @@ class EmojiWorld {
     for (int i = 1; i < _particles.size(); i++) {
       EmojiParticle p = _particles.get(i);
       EmojiGroup pg = p.getGroup();
-      if (!p.visible() && (pg == null || pg.getLeader() != _player)) {
+      if (p.isOutOfBounds() && (pg == null || pg.getLeader() != _player)) {
         if (pg != null) {
           pg.remove(p);
         }
