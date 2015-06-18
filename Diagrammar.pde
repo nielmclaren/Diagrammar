@@ -17,7 +17,8 @@ void draw() {
   world.step();
   
   pushMatrix();
-  translate(width/2 - world.player.pos.x, height/2 - world.player.pos.y);
+  PVector offset = world.getOffset();
+  translate(width/2 - offset.x, height/2 - offset.y);
   world.draw(this.g);
   popMatrix();
 }
@@ -37,7 +38,7 @@ void keyReleased() {
       save(fileNamer.next());
       break;
     case 'p':
-      world.isPaused = !world.isPaused;
+      world.setPaused(!world.isPaused());
       break;
     default:
   }

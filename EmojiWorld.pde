@@ -2,158 +2,170 @@
 class EmojiWorld {
   int worldWidth;
   int worldHeight;
-  int gridSize;
-  int numCols;
-  int numRows;
-  boolean isPaused;
+  private int _gridSize;
+  private int _numCols;
+  private int _numRows;
+  private boolean _isPaused;
 
-  int numParticles;
-  ArrayList<EmojiParticle> particles;
-  ArrayList<EmojiGroup> groups;
-  int currGroupIndex;
-  EmojiPlayer player;
-  EmojiGroup playerGroup;
+  private int _numParticles;
+  private ArrayList<EmojiParticle> _particles;
+  private ArrayList<EmojiGroup> _groups;
+  private int _currGroupIndex;
+  private EmojiPlayer _player;
+  private EmojiGroup _playerGroup;
 
-  EmojiWorld(int w, int h, int nParticles) {
+  EmojiWorld(int w, int h, int numParticles) {
     worldWidth = w;
     worldHeight = h;
-    
-    gridSize = 20;
-    numCols = ceil(worldWidth / 20);
-    numRows = ceil(worldHeight / 20);
-    
-    worldWidth = numCols * gridSize;
-    worldHeight = numRows * gridSize;
 
-    isPaused = false;
-    numParticles = nParticles;
+    _gridSize = 20;
+    _numCols = ceil(worldWidth / 20);
+    _numRows = ceil(worldHeight / 20);
+
+    worldWidth = _numCols * _gridSize;
+    worldHeight = _numRows * _gridSize;
+
+    _isPaused = false;
+    _numParticles = numParticles;
 
     reset();
   }
 
   void reset() {
-    particles = new ArrayList<EmojiParticle>();
-    groups = new ArrayList<EmojiGroup>();
-    currGroupIndex = 0;
+    _particles = new ArrayList<EmojiParticle>();
+    _groups = new ArrayList<EmojiGroup>();
+    _currGroupIndex = 0;
 
-    player = new EmojiPlayer(this, 0, new PVector(worldWidth/2, worldHeight/2));
-    playerGroup = new EmojiGroup(currGroupIndex++, player);
-    player.group = playerGroup;
-    particles.add(player);
+    _player = new EmojiPlayer(this, 0, new PVector(worldWidth/2, worldHeight/2));
+    _playerGroup = new EmojiGroup(_currGroupIndex++, _player);
+    _player.group = _playerGroup;
+    _particles.add(_player);
 
-    for (int i = 1; i < numParticles; ++i) {
-      particles.add(place(new EmojiParticle(this, i)));
+    for (int i = 1; i < _numParticles; ++i) {
+      _particles.add(place(new EmojiParticle(this, i)));
     }
   }
-  
+
   void step() {
-    if (isPaused) return;
-    
+    if (_isPaused) return;
+
     Iterator<EmojiParticle> iter;
-    
-    for (int i = 0; i < groups.size(); i++) {
-      EmojiGroup group = groups.get(i);
+
+    for (int i = 0; i < _groups.size(); i++) {
+      EmojiGroup group = _groups.get(i);
       if (group.particles.size() <= 0) {
-        groups.remove(i);
+        _groups.remove(i);
         i--;
       }
     }
 
-    for (int i = 1; i < particles.size(); i++) {
-      EmojiParticle p = particles.get(i);
-      if (!p.visible() && (p.group == null || p.group.leader != player)) {
+    for (int i = 1; i < _particles.size(); i++) {
+      EmojiParticle p = _particles.get(i);
+      if (!p.visible() && (p.group == null || p.group.leader != _player)) {
         if (p.group != null) {
           p.group.particles.remove(p);
         }
-        particles.set(i, place(new EmojiParticle(this, i)));
+        _particles.set(i, place(new EmojiParticle(this, i)));
         i--;
       }
     }
-    
+
     stepPlayerGroup();
 
-    iter = particles.iterator();
+    iter = _particles.iterator();
     while (iter.hasNext()) {
       EmojiParticle p = iter.next();
       p.step();
     }
 
-    for (int i = 0; i < particles.size () - 1; i++) {
-      EmojiParticle p = particles.get(i);
-      for (int j = i + 1; j < particles.size (); j++) {
-        EmojiParticle q = particles.get(j);
+    for (int i = 0; i < _particles.size () - 1; i++) {
+      EmojiParticle p = _particles.get(i);
+      for (int j = i + 1; j < _particles.size (); j++) {
+        EmojiParticle q = _particles.get(j);
         if (p.collision(q)) {
           handleCollision(p, q);
         }
       }
     }
   }
-  
+
   void stepPlayerGroup() {
-    Rectangle b = playerGroup.getBounds();
+    Rectangle b = _playerGroup.getBounds();
     if (b.x < 0) {
-      player.pos.x -= b.x;
-      if (player.vel.x < 0) {
-        player.vel.x = -player.vel.x;
+      _player.pos.x -= b.x;
+      if (_player.vel.x < 0) {
+        _player.vel.x = -_player.vel.x;
       }
     }
     if (b.x + b.w > world.worldWidth) {
-      player.pos.x -= b.x + b.w - world.worldWidth;
-      if (player.vel.x > 0) {
-        player.vel.x = -player.vel.x;
+      _player.pos.x -= b.x + b.w - world.worldWidth;
+      if (_player.vel.x > 0) {
+        _player.vel.x = -_player.vel.x;
       }
     }
     if (b.y < 0) {
-      player.pos.y -= b.y;
-      if (player.vel.y < 0) {
-        player.vel.y = -player.vel.y;
+      _player.pos.y -= b.y;
+      if (_player.vel.y < 0) {
+        _player.vel.y = -_player.vel.y;
       }
     }
     if (b.y + b.h > world.worldHeight) {
-      player.pos.y -= b.y + b.h - world.worldHeight;
-      if (player.vel.y > 0) {
-        player.vel.y = -player.vel.y;
+      _player.pos.y -= b.y + b.h - world.worldHeight;
+      if (_player.vel.y > 0) {
+        _player.vel.y = -_player.vel.y;
       }
     }
   }
 
   void draw(PGraphics g) {
     g.background(255);
-    
+
     g.noFill();
     g.stroke(224);
     g.strokeWeight(1);
     drawGrid(g);
-    
+
     g.strokeWeight(4);
     g.rect(0, 0, worldWidth, worldHeight);
 
-    Iterator<EmojiParticle> iter = particles.iterator();
+    Iterator<EmojiParticle> iter = _particles.iterator();
     while (iter.hasNext()) {
       EmojiParticle p = iter.next();
       p.draw(g);
     }
   }
   
-  void drawGrid(PGraphics g) {
-    for (int c = 0; c <= numCols; c++) {
-      g.line(c * gridSize, 0, c * gridSize, worldHeight);
+  PVector getOffset() {
+    return _player.pos.get();
+  }
+  
+  boolean isPaused() {
+    return _isPaused;
+  }
+  
+  void setPaused(boolean paused) {
+    _isPaused = paused;
+  }
+
+  private void drawGrid(PGraphics g) {
+    for (int c = 0; c <= _numCols; c++) {
+      g.line(c * _gridSize, 0, c * _gridSize, worldHeight);
     }
-    for (int r = 0; r <= numRows; r++) {
-      g.line(0, r * gridSize, worldWidth, r * gridSize);
+    for (int r = 0; r <= _numRows; r++) {
+      g.line(0, r * _gridSize, worldWidth, r * _gridSize);
     }
   }
 
-  EmojiParticle place(EmojiParticle p) {
-    while (dist (player.pos.x, player.pos.y, p.pos.x, p.pos.y) < 250 || collision(p)) {
+  private EmojiParticle place(EmojiParticle p) {
+    while (dist (_player.pos.x, _player.pos.y, p.pos.x, p.pos.y) < 250 || collision(p)) {
       p.pos.x = random(width);
       p.pos.y = random(height);
     }
     return p;
   }
 
-  boolean collision(EmojiParticle p) {
-    Iterator<EmojiParticle> iter = particles.iterator();
+  private boolean collision(EmojiParticle p) {
+    Iterator<EmojiParticle> iter = _particles.iterator();
     while (iter.hasNext ()) {
       EmojiParticle q = iter.next();
       if (p.id != q.id && p.collision(q)) {
@@ -163,11 +175,11 @@ class EmojiWorld {
     return false;
   }
 
-  void handleCollision(EmojiParticle p, EmojiParticle q) {
+  private void handleCollision(EmojiParticle p, EmojiParticle q) {
     if (p.group == null) {
       if (q.group == null) {
-        p.group = q.group = new EmojiGroup(currGroupIndex++, p, q);
-        groups.add(p.group);
+        p.group = q.group = new EmojiGroup(_currGroupIndex++, p, q);
+        _groups.add(p.group);
       }
       else {
         q.group.particles.add(p);
@@ -178,33 +190,33 @@ class EmojiWorld {
         p.group.particles.add(q);
         q.group = p.group;
       } else if (p.group.id != q.group.id) {
-        if (q.group == playerGroup) {
+        if (q.group == _playerGroup) {
           EmojiParticle temp = p;
           p = q;
           q = temp;
         }
-        
+
         Iterator<EmojiParticle> iter = q.group.particles.iterator();
         int i = 0;
         while (iter.hasNext ()) {
           EmojiParticle r = iter.next();
-          groups.remove(r.group);
+          _groups.remove(r.group);
           r.group = p.group;
           p.group.particles.add(r);
         }
       }
     }
 
-    if (p == player) p.group.leader = p;
-    else if (q == player) p.group.leader = q;
+    if (p == _player) p.group.leader = p;
+    else if (q == _player) p.group.leader = q;
   }
 
   void keyPressed() {
-    player.keyPressed();
+    _player.keyPressed();
   }
 
   void keyReleased() {
-    player.keyReleased();
+    _player.keyReleased();
   }
 }
 
