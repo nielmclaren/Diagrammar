@@ -1,83 +1,83 @@
 
 class EmojiPlayer extends EmojiParticle {
-  float maxVelocity;
-  float acceleration;
-  PVector acc;
-  
-  boolean isUp;
-  boolean isDown;
-  boolean isLeft;
-  boolean isRight;
-  
-  EmojiPlayer(EmojiWorld emojiWorld, int identifier, PVector position) {
-    super(emojiWorld, identifier, position, new PVector());
-    
-    maxVelocity = 4;
-    acceleration = 0.1;
-    
-    acc = new PVector();
-    
-    isUp = false;
-    isDown = false;
-    isLeft = false;
-    isRight = false;
+  private float _maxVelocity;
+  private float _acceleration;
+  private PVector _acc;
+
+  private boolean _isUp;
+  private boolean _isDown;
+  private boolean _isLeft;
+  private boolean _isRight;
+
+  EmojiPlayer(EmojiWorld world, int id, PVector pos) {
+    super(world, id, pos, new PVector());
+
+    _maxVelocity = 4;
+    _acceleration = 0.1;
+
+    _acc = new PVector();
+
+    _isUp = false;
+    _isDown = false;
+    _isLeft = false;
+    _isRight = false;
   }
-  
+
   void step() {
-    acc.x = 0;
-    acc.y = 0;
-    
-    if (isUp) {
-      acc.y -= acceleration;
+    _acc.x = 0;
+    _acc.y = 0;
+
+    if (_isUp) {
+      _acc.y -= _acceleration;
     }
-    if (isDown) {
-      acc.y += acceleration;
+    if (_isDown) {
+      _acc.y += _acceleration;
     }
-    if (isLeft) {
-      acc.x -= acceleration;
+    if (_isLeft) {
+      _acc.x -= _acceleration;
     }
-    if (isRight) {
-      acc.x += acceleration;
+    if (_isRight) {
+      _acc.x += _acceleration;
     }
-    
-    vel.add(acc);
-    if (vel.mag() > maxVelocity) {
-      vel.mult(maxVelocity / vel.mag());
+
+    vel.add(_acc);
+    if (vel.mag() > _maxVelocity) {
+      vel.mult(_maxVelocity / vel.mag());
     }
-    
+
     super.step();
   }
-  
+
   void keyPressed() {
     switch (keyCode) {
       case UP:
-        isUp = true;
+        _isUp = true;
         break;
       case DOWN:
-        isDown = true;
+        _isDown = true;
         break;
       case LEFT:
-        isLeft = true;
+        _isLeft = true;
         break;
       case RIGHT:
-        isRight = true;
+        _isRight = true;
         default:
     }
   }
-  
+
   void keyReleased() {
     switch (keyCode) {
       case UP:
-        isUp = false;
+        _isUp = false;
         break;
       case DOWN:
-        isDown = false;
+        _isDown = false;
         break;
       case LEFT:
-        isLeft = false;
+        _isLeft = false;
         break;
       case RIGHT:
-        isRight = false;
+        _isRight = false;
         default:
     }
   }
