@@ -37,7 +37,7 @@ class EmojiGroup {
   }
   
   PVector getVelocity() {
-    return _leader.vel.get();
+    return _leader.getVelocity();
   }
   
   boolean isEmpty() {

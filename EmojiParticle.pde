@@ -4,90 +4,107 @@
  * @see https://github.com/HenrikJoreteg/emoji-images
  */
 class EmojiParticle {
-  EmojiWorld world;
-  int id;
-  float speed;
-  PVector pos, vel;
-  String emojiStr;
-  PImage emojiImg;
-  EmojiGroup group;
-  float noiseScale = 0.002;
-  float radius = 12.5;
+  protected EmojiWorld _world;
+  protected int _id;
+  protected float _speed;
+  protected PVector _pos, _vel;
+  protected String _emojiStr;
+  protected PImage _emojiImg;
+  protected EmojiGroup _group;
+  protected float _radius = 12.5;
 
-  EmojiParticle(EmojiWorld emojiWorld, int identifier) {
-    world = emojiWorld;
-    id = identifier;
-    pos = new PVector(random(world.worldWidth), random(world.worldHeight));
-    speed = random(0.1, 1.5);
-    vel = new PVector(speed, 0);
-    vel.rotate(random(2 * PI));
-    
+  EmojiParticle(EmojiWorld world, int id) {
+    _world = world;
+    _id = id;
+    _pos = new PVector(random(_world.worldWidth), random(_world.worldHeight));
+    _speed = random(0.1, 1.5);
+    _vel = new PVector(_speed, 0);
+    _vel.rotate(random(2 * PI));
+
     initEmoji();
-    
-    group = null;
+
+    _group = null;
   }
-  
-  EmojiParticle(EmojiWorld emojiWorld, int identifier, PVector position, PVector velocity) {
-    world = emojiWorld;
-    id = identifier;
-    pos = position;
-    vel = velocity;
-    
+
+  EmojiParticle(EmojiWorld world, int id, PVector pos, PVector vel) {
+    _world = world;
+    _id = id;
+    _pos = pos;
+    _vel = vel;
+
     initEmoji();
-    
-    group = null;
+
+    _group = null;
   }
-  
+
   void initEmoji() {
-    emojiStr = emojis[floor(random(emojis.length))];
-    emojiImg = loadImage("assets/emoji/" + emojiStr + ".png");
+    _emojiStr = _emojis[floor(random(_emojis.length))];
+    _emojiImg = loadImage("assets/emoji/" + _emojiStr + ".png");
   }
-  
+
   void step() {
-    if (group == null || group.getLeader() == this) {
-      //vel.rotate((noise(pos.x * noiseScale, pos.y * noiseScale) * 2 - 1) * 0.05);
-      pos.add(vel);
+    if (_group == null || _group.getLeader() == this) {
+      _pos.add(_vel);
     }
     else {
-      pos.add(group.getVelocity());
+      _pos.add(_group.getVelocity());
     }
   }
 
   void draw(PGraphics g) {
     float s = 0.4;
     g.pushMatrix();
-    g.translate(pos.x, pos.y);
-    g.translate(-s*emojiImg.width/2, -s*emojiImg.height/2);
+    g.translate(_pos.x, _pos.y);
+    g.translate(-s*_emojiImg.width/2, -s*_emojiImg.height/2);
     g.scale(s, s);
-    //*
-    g.image(emojiImg, 0, 0);
-    /*/
-    fill(emojiImg.pixels[emojiImg.pixels.length/2]);
-    rect(0, 0, 64, 64);
-    //*/
+    g.image(_emojiImg, 0, 0);
     g.popMatrix();
   }
 
   Rectangle getBounds() {
-    return new Rectangle(pos.x - radius, pos.y - radius, 2 * radius, 2 * radius);
+    return new Rectangle(_pos.x - _radius, _pos.y - _radius, 2 * _radius, 2 * _radius);
+  }
+  
+  PVector getPosition() {
+    return _pos.get();
+  }
+  
+  void setPosition(PVector pos) {
+    _pos = pos;
   }
 
+  PVector getVelocity() {
+    return _vel.get();
+  }
+  
+  float getRadius() {
+    return _radius;
+  }
+  
+  EmojiGroup getGroup() {
+    return _group;
+  }
+  
+  void setGroup(EmojiGroup group) {
+    _group = group;
+  }
+  
   boolean collision(EmojiParticle p) {
-    return dist(pos.x, pos.y, p.pos.x, p.pos.y) < radius + p.radius;
+    return dist(_pos.x, _pos.y, p._pos.x, p._pos.y) < _radius + p.getRadius();
   }
 
   boolean visible() {
-    return pos.x + radius > 0
-      && pos.x - radius < world.worldWidth
-      && pos.y + radius > 0
-      && pos.y - radius < world.worldHeight;
+    return _pos.x + _radius > 0
+      && _pos.x - _radius < world.worldWidth
+      && _pos.y + _radius > 0
+      && _pos.y - _radius < world.worldHeight;
   }
 
   String toString() {
-    return "[EmojiParticle " + str(id) + "]";
+    return "[EmojiParticle " + str(_id) + "]";
   }
 
-  String emojis[] = new String[] {
+  private String _emojis[] = new String[] {
     "+1",
     "-1",
     "100",

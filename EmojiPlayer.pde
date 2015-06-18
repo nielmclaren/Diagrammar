@@ -8,6 +8,8 @@ class EmojiPlayer extends EmojiParticle {
   private boolean _isDown;
   private boolean _isLeft;
   private boolean _isRight;
+  
+  private float _bounceFactor;
 
   EmojiPlayer(EmojiWorld world, int id, PVector pos) {
     super(world, id, pos, new PVector());
@@ -21,6 +23,8 @@ class EmojiPlayer extends EmojiParticle {
     _isDown = false;
     _isLeft = false;
     _isRight = false;
+    
+    _bounceFactor = 0.8;
   }
 
   void step() {
@@ -40,9 +44,35 @@ class EmojiPlayer extends EmojiParticle {
       _acc.x += _acceleration;
     }
 
-    vel.add(_acc);
-    if (vel.mag() > _maxVelocity) {
-      vel.mult(_maxVelocity / vel.mag());
+    _vel.add(_acc);
+    if (_vel.mag() > _maxVelocity) {
+      _vel.mult(_maxVelocity / _vel.mag());
+    }
+    
+    Rectangle b = _group.getBounds();
+    if (b.x < 0) {
+      _pos.x -= b.x;
+      if (_vel.x < 0) {
+        _vel.x = -_vel.x * _bounceFactor;
+      }
+    }
+    if (b.x + b.w > world.worldWidth) {
+      _pos.x -= b.x + b.w - world.worldWidth;
+      if (_vel.x > 0) {
+        _vel.x = -_vel.x * _bounceFactor;
+      }
+    }
+    if (b.y < 0) {
+      _pos.y -= b.y;
+      if (_vel.y < 0) {
+        _vel.y = -_vel.y * _bounceFactor;
+      }
+    }
+    if (b.y + b.h > world.worldHeight) {
+      _pos.y -= b.y + b.h - world.worldHeight;
+      if (_vel.y > 0) {
+        _vel.y = -_vel.y * _bounceFactor;
+      }
     }
 
     super.step();

@@ -38,7 +38,7 @@ class EmojiWorld {
 
     _player = new EmojiPlayer(this, 0, new PVector(worldWidth/2, worldHeight/2));
     _playerGroup = new EmojiGroup(_currGroupIndex++, _player);
-    _player.group = _playerGroup;
+    _player.setGroup(_playerGroup);
     _particles.add(_player);
 
     for (int i = 1; i < _numParticles; ++i) {
@@ -61,16 +61,15 @@ class EmojiWorld {
 
     for (int i = 1; i < _particles.size(); i++) {
       EmojiParticle p = _particles.get(i);
-      if (!p.visible() && (p.group == null || p.group.getLeader() != _player)) {
-        if (p.group != null) {
-          p.group.remove(p);
+      EmojiGroup pg = p.getGroup();
+      if (!p.visible() && (pg == null || pg.getLeader() != _player)) {
+        if (pg != null) {
+          pg.remove(p);
         }
         _particles.set(i, place(new EmojiParticle(this, i)));
         i--;
       }
     }
-
-    stepPlayerGroup();
 
     iter = _particles.iterator();
     while (iter.hasNext()) {
@@ -85,34 +84,6 @@ class EmojiWorld {
         if (p.collision(q)) {
           handleCollision(p, q);
         }
-      }
-    }
-  }
-
-  void stepPlayerGroup() {
-    Rectangle b = _playerGroup.getBounds();
-    if (b.x < 0) {
-      _player.pos.x -= b.x;
-      if (_player.vel.x < 0) {
-        _player.vel.x = -_player.vel.x;
-      }
-    }
-    if (b.x + b.w > world.worldWidth) {
-      _player.pos.x -= b.x + b.w - world.worldWidth;
-      if (_player.vel.x > 0) {
-        _player.vel.x = -_player.vel.x;
-      }
-    }
-    if (b.y < 0) {
-      _player.pos.y -= b.y;
-      if (_player.vel.y < 0) {
-        _player.vel.y = -_player.vel.y;
-      }
-    }
-    if (b.y + b.h > world.worldHeight) {
-      _player.pos.y -= b.y + b.h - world.worldHeight;
-      if (_player.vel.y > 0) {
-        _player.vel.y = -_player.vel.y;
       }
     }
   }
@@ -136,7 +107,7 @@ class EmojiWorld {
   }
   
   PVector getOffset() {
-    return _player.pos.get();
+    return _player.getPosition();
   }
   
   boolean isPaused() {
@@ -157,10 +128,12 @@ class EmojiWorld {
   }
 
   private EmojiParticle place(EmojiParticle p) {
-    while (dist (_player.pos.x, _player.pos.y, p.pos.x, p.pos.y) < 250 || collision(p)) {
-      p.pos.x = random(width);
-      p.pos.y = random(height);
+    PVector pos, playerPos = _player.getPosition();
+    do {
+      pos = new PVector(random(worldWidth), random(worldHeight));
+      p.setPosition(pos);
     }
+    while (dist(playerPos.x, playerPos.y, pos.x, pos.y) < 250 || collision(p));
     return p;
   }
 
@@ -168,7 +141,7 @@ class EmojiWorld {
     Iterator<EmojiParticle> iter = _particles.iterator();
     while (iter.hasNext ()) {
       EmojiParticle q = iter.next();
-      if (p.id != q.id && p.collision(q)) {
+      if (p != q && p.collision(q)) {
         return true;
       }
     }
@@ -176,39 +149,49 @@ class EmojiWorld {
   }
 
   private void handleCollision(EmojiParticle p, EmojiParticle q) {
-    if (p.group == null) {
-      if (q.group == null) {
-        p.group = q.group = new EmojiGroup(_currGroupIndex++, p, q);
-        _groups.add(p.group);
+    EmojiGroup pg = p.getGroup();
+    EmojiGroup qg = q.getGroup();
+    if (pg == null) {
+      if (qg == null) {
+        EmojiGroup group = new EmojiGroup(_currGroupIndex++, p, q);
+        _groups.add(group);
+        p.setGroup(group);
+        q.setGroup(group);
+        pg = group;
+        qg = group;
       }
       else {
-        q.group.add(p);
-        p.group = q.group;
+        qg.add(p);
+        p.setGroup(qg);
+        pg = qg;
       }
     } else {
-      if (q.group == null) {
-        p.group.add(q);
-        q.group = p.group;
-      } else if (p.group != q.group) {
-        if (q.group == _playerGroup) {
+      if (qg == null) {
+        pg.add(q);
+        q.setGroup(pg);
+        qg = pg;
+      } else if (pg != qg) {
+        if (qg == _playerGroup) {
           EmojiParticle temp = p;
           p = q;
           q = temp;
+          pg = p.getGroup();
+          qg = q.getGroup();
         }
 
-        Iterator<EmojiParticle> iter = q.group.iterator();
+        Iterator<EmojiParticle> iter = qg.iterator();
         int i = 0;
         while (iter.hasNext()) {
           EmojiParticle r = iter.next();
-          _groups.remove(r.group);
-          r.group = p.group;
-          p.group.add(r);
+          _groups.remove(r.getGroup());
+          r.setGroup(pg);
+          pg.add(r);
         }
       }
     }
 
-    if (p == _player) p.group.setLeader(p);
-    else if (q == _player) p.group.setLeader(q);
+    if (p == _player) p.getGroup().setLeader(p);
+    else if (q == _player) p.getGroup().setLeader(q);
   }
 
   void keyPressed() {
