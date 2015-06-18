@@ -44,12 +44,12 @@ class EmojiParticle {
   }
   
   void step() {
-    if (group == null || group.leader == this) {
+    if (group == null || group.getLeader() == this) {
       //vel.rotate((noise(pos.x * noiseScale, pos.y * noiseScale) * 2 - 1) * 0.05);
       pos.add(vel);
     }
     else {
-      pos.add(group.leader.vel);
+      pos.add(group.getVelocity());
     }
   }
 
