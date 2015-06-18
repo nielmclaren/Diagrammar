@@ -12,26 +12,46 @@ void setup() {
   reset();
 }
 
-void draw() {
-}
-
-void drawCrystal(PVector p) {
+void reset() {
+  background(0x192c31);
   noFill();
   strokeWeight(2);
-  
-  int numCycles = 400;
-  for (int i = 0; i < numCycles; i++) {
-    drawLine(p, i, numCycles);
+  for (int i = 0; i < 5; i++) {
+    drawCrystal(new PVector(random(width), random(height)));
   }
 }
 
-void drawLine(PVector p, int index, int numCycles) {
+void draw() {
+}
+
+void drawCrystal(PVector point) {
+  float baseRadius = random(60, 120);
+  drawCrystal(point, 0, 2 * PI, baseRadius);
+}
+
+void drawCrystal(PVector point, float direction, float angle, float baseRadius) {
+  int numCycles = getNumCycles(baseRadius, angle);
+  for (int i = 0; i < numCycles; i++) {
+    float dir = direction - angle/2 + angle * i / numCycles + random(2.0 * PI * 0.001);
+    drawLine(point, dir, baseRadius + random(baseRadius * 0.02));
+  }
+  
+  for (int i = 0; i < numCycles; i++) {
+    if (random(1) < 0.006) {
+      float dir = direction - angle/2 + angle * i / numCycles + random(2.0 * PI * 0.001);
+      PVector p = new PVector(
+        point.x + baseRadius * cos(dir),
+        point.y + baseRadius * sin(dir));
+      drawCrystal(p, dir + 2 * PI * random(-0.1, 0.1), angle * random(0.05, 0.2), baseRadius * random(0.4, 0.8));
+    }
+  }
+}
+
+void drawLine(PVector p, float direction, float radius) {
   float noiseScale = 0.01;
   
-  float radius = 80 + random(3);
-  float theta = 2.0 * PI * index / numCycles + random(2.0 * PI * 0.001);
-  float x = p.x + radius * cos(theta);
-  float y = p.y + radius * sin(theta);
+  float x = p.x + radius * cos(direction);
+  float y = p.y + radius * sin(direction);
   float colorJitter = 0.1;
   color c1 = lerpColor(#29415a, #818b95, noise(x * noiseScale, y * noiseScale) + random(colorJitter));
   color c2 = lerpColor(#29415a, #818b95, noise(x * noiseScale, y * noiseScale) + random(colorJitter));
@@ -41,18 +61,15 @@ void drawLine(PVector p, int index, int numCycles) {
   int numSegments = floor(random(5, 12));
   for (int i = 0; i < numSegments; i++) {
     float r = radius / numSegments;
-    x += r * cos(theta);
-    y += r * sin(theta);
+    x += r * cos(direction);
+    y += r * sin(direction);
     stroke(lerpColor(c1, c2, random(1)));
     line(p.x, p.y, x, y);
   }
 }
 
-void reset() {
-  background(0x192c31);
-  for (int i = 0; i < 20; i++) {
-    drawCrystal(new PVector(random(width), random(height)));
-  }
+int getNumCycles(float r, float a) {
+  return floor(a * r * 0.7);
 }
 
 void keyReleased() {
