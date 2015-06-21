@@ -13,9 +13,20 @@ class Blobber {
   }
   
   void blob(color[] inPixels, color[] outPixels, int w, int h) {
-    for (int i = 0; i < w * h; i++) {
-      float b = brightness(inPixels[i]);
-      outPixels[i] = _palette[floor(map(b, 0, 255, 0, _palette.length - 1))];
+    int s = 40;
+    int adj = 16;
+    for (int x = 0; x < w; x++) {
+      for (int y = 0; y < h; y++) {
+        int i = y * w + x;
+        float b = brightness(inPixels[i]);
+        if (x % s < s/2 == y % s < s/2) {
+          color c = _palette[floor(map(b, 0, 255, 0, _palette.length - 1))];
+          outPixels[i] = color(red(c) + adj, green(c) + adj, blue(c) + adj);
+        }
+        else {
+          outPixels[i] = _palette[floor(map(b, 0, 255, 0, _palette.length - 1))];
+        }
+      }
     }
   }
 }
