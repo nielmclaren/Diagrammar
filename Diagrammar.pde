@@ -3,7 +3,7 @@ import java.util.Iterator;
 
 FileNamer fileNamer;
 PGraphics gradientImg, blobImg, crystalImg;
-color[] palette;
+Blobber blobber;
 FastBlurrer blurrer;
 
 void setup() {
@@ -16,10 +16,11 @@ void setup() {
   gradientImg = createGraphics(width, height);
   blobImg = createGraphics(width, height);
   crystalImg = createGraphics(width, height);
+  
+  blobber = new Blobber();
+  blobber.setPalette(loadPalette("assets/stripey.png"));
   blurrer = new FastBlurrer(gradientImg.width, gradientImg.height, 5);
   
-  loadPalette("assets/stripey.png");
-
   reset();
 }
 
@@ -51,22 +52,13 @@ void reset() {
   blurrer.blur(gradientImg.pixels);
   gradientImg.updatePixels();
   
-  updateBlobImg();
+  gradientImg.loadPixels();
+  blobImg.loadPixels();
+  blobber.blob(gradientImg.pixels, blobImg.pixels, gradientImg.width, gradientImg.height);
+  blobImg.updatePixels();
   
   image(blobImg, 0, 0);
   image(crystalImg, 0, 0);
-}
-
-void updateBlobImg() {
-  gradientImg.loadPixels();
-  blobImg.loadPixels();
-  
-  for (int i = 0; i < blobImg.width * blobImg.height; i++) {
-    float b = brightness(gradientImg.pixels[i]);
-    blobImg.pixels[i] = palette[floor(map(b, 0, 255, 0, palette.length - 1))];
-  }
-  
-  blobImg.updatePixels();
 }
 
 void draw() {
@@ -135,13 +127,14 @@ int getNumCycles(float r, float a) {
   return floor(a * r * 1.2);
 }
 
-void loadPalette(String paletteFilename) {
+color[] loadPalette(String paletteFilename) {
   PImage paletteImg = loadImage(paletteFilename);
-  palette = new color[paletteImg.width];
+  color[] palette = new color[paletteImg.width];
   paletteImg.loadPixels();
   for (int i = 0; i < paletteImg.width; i++) {
     palette[i] = paletteImg.pixels[i];
   }
+  return palette;
 }
 
 void keyReleased() {
