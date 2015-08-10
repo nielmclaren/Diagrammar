@@ -97,6 +97,22 @@ class VectorStepper {
     return dir.get();
   }
 
+  float getMinPosDelta() {
+    return minPosDelta;
+  }
+
+  float getMaxPosDelta() {
+    return maxPosDelta;
+  }
+
+  float getMinAngleDelta() {
+    return minAngleDelta;
+  }
+
+  float getMaxAngleDelta() {
+    return maxAngleDelta;
+  }
+
   private void init(
       PVector _pos, PVector _direction,
       float _minPosDelta, float _maxPosDelta,

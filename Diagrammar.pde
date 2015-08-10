@@ -1,130 +1,54 @@
 
-import java.util.Iterator;
-
 FileNamer fileNamer;
-PGraphics gradientImg, blobImg, crystalImg;
-Blobber blobber;
-FastBlurrer blurrer;
+ArrayList<VectorStepper> steppers;
+
+PGraphics fillCanvas, strokeCanvas;
+
+color[] palette;
 
 void setup() {
   size(1024, 768);
-  background(128);
   smooth();
 
   fileNamer = new FileNamer("output/export", "png");
-  
-  gradientImg = createGraphics(width, height);
-  blobImg = createGraphics(width, height);
-  crystalImg = createGraphics(width, height);
-  
-  blobber = new Blobber();
-  blobber.setPalette(loadPalette("assets/stripey.png"));
-  blurrer = new FastBlurrer(gradientImg.width, gradientImg.height, 5);
-  
+
+  palette = loadPalette("assets/layers.jpg");
+
   reset();
 }
 
 void reset() {
-  gradientImg.loadPixels();
-  crystalImg.loadPixels();
-  
-  for (int i = 0; i < width * height; i++) {
-    gradientImg.pixels[i] = color(0);
-    crystalImg.pixels[i] = color(0, 0);
+  background(#e698ec);
+
+  steppers = new ArrayList<VectorStepper>();
+  steppers.add(getStepper(new PVector(width/2, height/2)));
+
+  for (int i = 0; i < steppers.size(); i++) {
+    VectorStepper stepper = steppers.get(i);
+    int steps = floor(random(100, 200));
+
+    fillCanvas = createGraphics(width, height);
+    strokeCanvas = createGraphics(width, height);
+
+    strokeCanvas.beginDraw();
+    fillCanvas.beginDraw();
+
+    strokeCanvas.noStroke();
+    strokeCanvas.fill(0);
+    fillCanvas.noStroke();
+    fillCanvas.fill(palette[i % palette.length]);
+
+    drawSteps(stepper, steps);
+
+    strokeCanvas.endDraw();
+    fillCanvas.endDraw();
+
+    image(strokeCanvas, 0, 0);
+    image(fillCanvas, 0, 0);
   }
-  gradientImg.updatePixels();
-  crystalImg.updatePixels();
-  
-  gradientImg.beginDraw();
-  crystalImg.beginDraw();
-  
-  crystalImg.noFill();
-  crystalImg.strokeWeight(2);
-  
-  for (int i = 0; i < 5; i++) {
-    drawCrystal(new PVector(random(width), random(height)), random(60, 120));
-  }
-  
-  gradientImg.endDraw();
-  crystalImg.endDraw();
-  
-  gradientImg.loadPixels();
-  blurrer.blur(gradientImg.pixels);
-  gradientImg.updatePixels();
-  
-  gradientImg.loadPixels();
-  blobImg.loadPixels();
-  blobber.blob(gradientImg.pixels, blobImg.pixels, gradientImg.width, gradientImg.height);
-  blobImg.updatePixels();
-  
-  image(blobImg, 0, 0);
-  image(crystalImg, 0, 0);
 }
 
 void draw() {
-}
-
-void drawCrystal(PVector point, float baseRadius) {
-  drawCrystal(point, 0, 2 * PI, baseRadius);
-}
-
-void drawCrystal(PVector point, float direction, float angle, float baseRadius) {
-  int numCycles = getNumCycles(baseRadius, angle);
-  float radius = 0;
-  for (int i = 0; i < numCycles; i++) {
-    float dir = direction - angle/2 + angle * i / numCycles + random(2.0 * PI * 0.001);
-    if (i % 12 == 0) {
-      radius = baseRadius + random(baseRadius * 0.04);
-    }
-    drawLine(point, dir, radius);
-  }
-  
-  for (int i = 0; i < numCycles; i++) {
-    float dir = direction - angle/2 + angle * i / numCycles + random(2.0 * PI * 0.001);
-    if (random(1) < 0.006) {
-      PVector p = new PVector(
-        point.x + baseRadius * cos(dir),
-        point.y + baseRadius * sin(dir));
-      drawCrystal(p, dir + 2 * PI * random(-0.1, 0.1), angle * random(0.05, 0.2), baseRadius * random(0.4, 0.8));
-    }
-    
-    if (random(1) < 0.016) {
-      radius = baseRadius + random(8, 16);
-      drawCrystal(new PVector(
-        point.x + radius * cos(dir),
-        point.y + radius * sin(dir)), random(2 * PI), 2 * PI * random(0.02, 0.12), baseRadius * random(0.06, 0.12));
-    }
-  }
-}
-
-void drawLine(PVector p, float direction, float radius) {
-  float noiseScale = 0.01;
-  
-  float x = p.x + radius * cos(direction);
-  float y = p.y + radius * sin(direction);
-  float colorJitter = 0.1;
-  color c1 = lerpColor(#ff9b17, #ffc617, noise(x * noiseScale, y * noiseScale) + random(colorJitter));
-  color c2 = lerpColor(#ff9b17, #f8ad4a, noise(x * noiseScale, y * noiseScale) + random(colorJitter));
-  
-  x = p.x;
-  y = p.y;
-  int numSegments = floor(random(5, 12));
-  for (int i = 0; i < numSegments; i++) {
-    float r = radius / numSegments;
-    x += r * cos(direction);
-    y += r * sin(direction);
-    crystalImg.stroke(lerpColor(c1, c2, random(1)));
-    crystalImg.line(p.x, p.y, x, y);
-    
-    gradientImg.blendMode(ADD);
-    gradientImg.strokeWeight(16);
-    gradientImg.stroke(128);
-    gradientImg.line(p.x, p.y, x, y);
-  }
-}
-
-int getNumCycles(float r, float a) {
-  return floor(a * r * 1.2);
 }
 
 color[] loadPalette(String paletteFilename) {
@@ -135,6 +59,54 @@ color[] loadPalette(String paletteFilename) {
     palette[i] = paletteImg.pixels[i];
   }
   return palette;
+}
+
+VectorStepper getStepper(PVector point) {
+  float posDelta = 3;
+  float angleDelta = random(0.05, 0.15) * PI;
+  return new VectorStepper(point, posDelta, posDelta, angleDelta, angleDelta);
+}
+
+void drawSteps(VectorStepper stepper, int steps) {
+  float strokeRadius = stepper.getMinPosDelta() + random(5, 20);
+  float fillRadius = strokeRadius * 0.8;
+
+  for (int i = 0; i < steps; i++) {
+    PVector p = stepper.next();
+    strokeCanvas.ellipse(p.x, p.y, strokeRadius, strokeRadius);
+    fillCanvas.ellipse(p.x, p.y, fillRadius, fillRadius);
+
+    if (random(1) < 0.05 && steppers.size() < 100) {
+      steppers.add(getStepper(p));
+    }
+
+    if (random(1) < 0.02) {
+      VectorStepper tentacleStepper = new VectorStepper(
+        p,
+        new PVector(0, 1),
+        1, 1, 0, 0.04 * PI);
+      drawTentacleSteps(tentacleStepper, floor(random(80, 240)), fillRadius);
+    }
+  }
+}
+
+void drawTentacleSteps(VectorStepper stepper, int steps, float radius) {
+  float radiusDecay = 0.992;
+
+  float strokeRadius = random(radius * 0.5, radius);
+  for (int i = 0; i < 240 - steps; i++) {
+    strokeRadius *= radiusDecay;
+  }
+  float fillRadius = strokeRadius * 0.6;
+
+  for (int i = 0; i < steps; i++) {
+    PVector p = stepper.next();
+    strokeCanvas.ellipse(p.x, p.y, strokeRadius, strokeRadius);
+    fillCanvas.ellipse(p.x, p.y, fillRadius, fillRadius);
+
+    strokeRadius *= 0.992;
+    fillRadius = strokeRadius * 0.6;
+  }
 }
 
 void keyReleased() {
