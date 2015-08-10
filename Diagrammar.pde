@@ -80,12 +80,34 @@ void drawSteps(VectorStepper stepper, int steps) {
       steppers.add(getStepper(p));
     }
 
-    if (random(1) < 0.02) {
+    if (random(1) < 0.08) {
       VectorStepper tentacleStepper = new VectorStepper(
         p,
         new PVector(0, 1),
         1, 1, 0, 0.04 * PI);
       drawTentacleSteps(tentacleStepper, floor(random(80, 240)), fillRadius);
+    }
+
+    if (i == floor(steps/2) && random(1) < 0.2) {
+      float w = random(width/12);
+      float h = w * 6;
+      float x = p.x - w/2;
+      float y = p.y - h/2;
+
+      strokeCanvas.pushMatrix();
+      fillCanvas.pushMatrix();
+
+      strokeCanvas.translate(x, y);
+      fillCanvas.translate(x, y);
+
+      strokeCanvas.rotate(PI * 0.3);
+      fillCanvas.rotate(PI * 0.3);
+
+      strokeCanvas.rect(0, 0, w, h);
+      fillCanvas.rect(1, 1, w - 2, h - 2);
+
+      strokeCanvas.popMatrix();
+      fillCanvas.popMatrix();
     }
   }
 }
