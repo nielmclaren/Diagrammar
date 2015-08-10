@@ -6,6 +6,8 @@ PGraphics fillCanvas, strokeCanvas;
 
 color[] palette;
 
+float noiseScale;
+
 void setup() {
   size(1024, 768);
   smooth();
@@ -13,6 +15,8 @@ void setup() {
   fileNamer = new FileNamer("output/export", "png");
 
   palette = loadPalette("assets/layers.jpg");
+
+  noiseScale = 0.02;
 
   reset();
 }
@@ -122,13 +126,36 @@ void drawTentacleSteps(VectorStepper stepper, int steps, float radius) {
   float fillRadius = strokeRadius * 0.6;
 
   for (int i = 0; i < steps; i++) {
-    PVector p = stepper.next();
+    PVector q = stepper.getPosition();
+    PVector r = stepper.next();
+    PVector p = getPerlinPosition(q, r, i, steps);
+    stepper.setPosition(p);
+
     strokeCanvas.ellipse(p.x, p.y, strokeRadius, strokeRadius);
     fillCanvas.ellipse(p.x, p.y, fillRadius, fillRadius);
 
     strokeRadius *= 0.992;
     fillRadius = strokeRadius * 0.6;
   }
+}
+
+PVector getPerlinPosition(PVector curr, PVector next, int i, int steps) {
+  float scale = (float)i / steps;
+
+  PVector delta = next.get();
+  delta.sub(curr);
+
+  PVector perlinDelta = (new PVector(delta.mag(), 0));
+  perlinDelta.rotate(noise(curr.x * noiseScale, curr.y * noiseScale) * PI);
+
+  delta.mult(1 - scale);
+  perlinDelta.mult(scale);
+
+  PVector p = curr.get();
+  p.add(delta);
+  p.add(perlinDelta);
+
+  return p;
 }
 
 void keyReleased() {

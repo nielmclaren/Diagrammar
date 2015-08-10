@@ -93,8 +93,16 @@ class VectorStepper {
     return pos.get();
   }
 
+  void setPosition(PVector p) {
+    pos.set(p);
+  }
+
   PVector getDirection() {
     return dir.get();
+  }
+
+  void setDirection(PVector p) {
+    dir.set(p);
   }
 
   float getMinPosDelta() {
