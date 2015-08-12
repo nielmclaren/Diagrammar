@@ -1,8 +1,13 @@
 
+import java.util.Collections;
+import java.util.Iterator;
+
 FileNamer fileNamer;
-ArrayList<VectorStepper> steppers;
 
 PGraphics fillCanvas, strokeCanvas;
+PImage img;
+PGraphics[] fillLayers, strokeLayers;
+PVector center;
 
 color[] palette;
 
@@ -14,7 +19,12 @@ void setup() {
 
   fileNamer = new FileNamer("output/export", "png");
 
-  palette = loadPalette("assets/layers.jpg");
+  img = loadImage("assets/shuttleapproach.gif");
+  center = new PVector(width/2, height/2);
+
+  palette = getColors(img);
+  fillLayers = processFillLayers(getLayers(palette));
+  strokeLayers = processStrokeLayers(getLayers(palette));
 
   noiseScale = 0.02;
 
@@ -22,14 +32,11 @@ void setup() {
 }
 
 void reset() {
-  background(#e698ec);
+  background(0);
 
-  steppers = new ArrayList<VectorStepper>();
-  steppers.add(getStepper(new PVector(width/2, height/2)));
-
-  for (int i = 0; i < steppers.size(); i++) {
-    VectorStepper stepper = steppers.get(i);
-    int steps = floor(random(100, 200));
+  for (int i = 0; i < fillLayers.length; i++) {
+    PGraphics fillLayer = fillLayers[i];
+    PGraphics strokeLayer = strokeLayers[i];
 
     fillCanvas = createGraphics(width, height);
     strokeCanvas = createGraphics(width, height);
@@ -37,17 +44,30 @@ void reset() {
     strokeCanvas.beginDraw();
     fillCanvas.beginDraw();
 
-    strokeCanvas.noStroke();
-    strokeCanvas.fill(0);
-    fillCanvas.noStroke();
-    fillCanvas.fill(palette[i % palette.length]);
+    img.loadPixels();
+    for (int j = 0; j < 50; j++) {
+      PVector p = new PVector(random(width), random(height));
+      while (img.get(floor(p.x), floor(p.y)) != palette[i]) {
+        p = new PVector(random(width), random(height));
+      }
 
-    drawSteps(stepper, steps);
+      VectorStepper stepper = getStepper(p);
+      int steps = floor(random(100, 200));
+
+      strokeCanvas.noStroke();
+      strokeCanvas.fill(0);
+      fillCanvas.noStroke();
+      fillCanvas.fill(img.get(floor(p.x), floor(p.y)));
+
+      drawSteps(stepper, steps);
+    }
 
     strokeCanvas.endDraw();
     fillCanvas.endDraw();
 
+    image(strokeLayer, 0, 0);
     image(strokeCanvas, 0, 0);
+    image(fillLayer, 0, 0);
     image(fillCanvas, 0, 0);
   }
 }
@@ -55,63 +75,115 @@ void reset() {
 void draw() {
 }
 
-color[] loadPalette(String paletteFilename) {
-  PImage paletteImg = loadImage(paletteFilename);
-  color[] palette = new color[paletteImg.width];
-  paletteImg.loadPixels();
-  for (int i = 0; i < paletteImg.width; i++) {
-    palette[i] = paletteImg.pixels[i];
+color[] getColors(PImage img) {
+  ArrayList<Integer> colorList = new ArrayList<Integer>();
+
+  img.loadPixels();
+  for (int i = 0; i < img.width * img.height; i++) {
+    Integer c = img.pixels[i];
+    if (!colorList.contains(c)) {
+      colorList.add(c);
+    }
   }
-  return palette;
+
+  color darkest = color(255);
+  int darkestIndex = -1;
+  for (int i = 0; i < colorList.size(); i++) {
+    if (brightness(colorList.get(i)) < brightness(darkest)) {
+      darkest = colorList.get(i);
+      darkestIndex = i;
+    }
+  }
+  if (darkestIndex >= 0) {
+    colorList.remove(darkestIndex);
+  }
+
+  Collections.sort(colorList);
+
+  color[] result = new color[colorList.size()];
+  Iterator<Integer> iterator = colorList.iterator();
+  for (int i = 0; i < result.length; i++) {
+    result[i] = iterator.next().intValue();
+  }
+  return result;
 }
 
-VectorStepper getStepper(PVector point) {
+PGraphics[] getLayers(color[] colors) {
+  img.loadPixels();
+
+  PGraphics[] result = new PGraphics[colors.length];
+  for (int i = 0; i < colors.length; i++) {
+    color c = colors[i];
+
+    PGraphics r = result[i] = createGraphics(width, height);
+    r.loadPixels();
+    for (int p = 0; p < img.pixels.length; p++) {
+      r.pixels[p] = img.pixels[p] == c ? c : 0;
+    }
+    r.updatePixels();
+  }
+  return result;
+}
+
+PGraphics[] processFillLayers(PGraphics[] layers) {
+  FastBlurrer blurrer = new FastBlurrer(width, height, 1);
+  for (int i = 0; i < layers.length; i++) {
+    layers[i].loadPixels();
+    blurrer.blur(layers[i].pixels);
+
+    for (int p = 0; p < layers[i].pixels.length; p++) {
+      color c = layers[i].pixels[p];
+      layers[i].pixels[p] = c == palette[i] ? c : 0;
+    }
+
+    layers[i].updatePixels();
+  }
+  return layers;
+}
+
+PGraphics[] processStrokeLayers(PGraphics[] layers) {
+  color black = color(0);
+  FastBlurrer blurrer = new FastBlurrer(width, height, 1);
+  for (int i = 0; i < layers.length; i++) {
+    layers[i].loadPixels();
+    blurrer.blur(layers[i].pixels);
+
+    for (int p = 0; p < layers[i].pixels.length; p++) {
+      color c = layers[i].pixels[p];
+      layers[i].pixels[p] = c == black ? 0 : black;
+    }
+
+    layers[i].updatePixels();
+  }
+  return layers;
+}
+
+VectorStepper getStepper(PVector p) {
   float posDelta = 3;
   float angleDelta = random(0.05, 0.15) * PI;
-  return new VectorStepper(point, posDelta, posDelta, angleDelta, angleDelta);
+  PVector dir = p.get();
+  dir.sub(center);
+  dir.normalize();
+  return new VectorStepper(p, dir, posDelta, posDelta, angleDelta, angleDelta);
 }
 
 void drawSteps(VectorStepper stepper, int steps) {
-  float strokeRadius = stepper.getMinPosDelta() + random(5, 20);
-  float fillRadius = strokeRadius * 0.8;
+  float strokeRadius = stepper.getMinPosDelta() + random(2, 10);
+  float fillRadius = strokeRadius * 0.6;
 
   for (int i = 0; i < steps; i++) {
     PVector p = stepper.next();
     strokeCanvas.ellipse(p.x, p.y, strokeRadius, strokeRadius);
     fillCanvas.ellipse(p.x, p.y, fillRadius, fillRadius);
 
-    if (random(1) < 0.05 && steppers.size() < 100) {
-      steppers.add(getStepper(p));
-    }
-
     if (random(1) < 0.08) {
+      PVector dir = p.get();
+      dir.sub(center);
+      dir.normalize();
       VectorStepper tentacleStepper = new VectorStepper(
-        p,
-        new PVector(0, 1),
+        p, dir,
         1, 1, 0, 0.04 * PI);
-      drawTentacleSteps(tentacleStepper, floor(random(80, 240)), fillRadius);
-    }
-
-    if (i == floor(steps/2) && random(1) < 0.2) {
-      float w = random(width/12);
-      float h = w * 6;
-      float x = p.x - w/2;
-      float y = p.y - h/2;
-
-      strokeCanvas.pushMatrix();
-      fillCanvas.pushMatrix();
-
-      strokeCanvas.translate(x, y);
-      fillCanvas.translate(x, y);
-
-      strokeCanvas.rotate(PI * 0.3);
-      fillCanvas.rotate(PI * 0.3);
-
-      strokeCanvas.rect(0, 0, w, h);
-      fillCanvas.rect(1, 1, w - 2, h - 2);
-
-      strokeCanvas.popMatrix();
-      fillCanvas.popMatrix();
+      drawTentacleSteps(tentacleStepper, floor(random(40, 120)), strokeRadius);
     }
   }
 }
