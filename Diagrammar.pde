@@ -7,7 +7,9 @@ FileNamer fileNamer;
 ArrayList<Wave> waves;
 
 PGraphics canvas;
+PImage background;
 PShape crest;
+PImage umibozu;
 
 float diamondWidth;
 float diamondHeight;
@@ -23,8 +25,10 @@ void setup() {
   diamondHeight = 200;
   overlapAmount = 10;
 
+  background = loadImage("assets/background.png");
   crest = loadShape("assets/crest.svg");
   crest.disableStyle();
+  umibozu = loadImage("assets/umibozu.png");
 
   reset();
 }
@@ -43,18 +47,31 @@ void reset() {
 void redraw() {
   canvas.beginDraw();
   canvas.background(0);
+  canvas.image(background, 0, 0);
 
   canvas.stroke(#cdddff);
   canvas.strokeWeight(2);
   canvas.fill(#444a91);
 
+  boolean umibozuDrawn = false;
+
   Iterator<Wave> iter = waves.iterator();
   while (iter.hasNext()) {
     Wave wave = iter.next();
     canvas.pushMatrix();
+
     canvas.translate(wave.point.x, wave.point.y);
     drawWave(canvas, wave.direction);
     canvas.popMatrix();
+
+    if (!umibozuDrawn && wave.point.y > height * 0.6) {
+      canvas.pushMatrix();
+      canvas.translate(random(width * 0.2, width * 0.8) - umibozu.width, wave.point.y - 200);
+      canvas.image(umibozu, 0, 0, umibozu.width, umibozu.height);
+      canvas.popMatrix();
+
+      umibozuDrawn = true;
+    }
   }
   canvas.endDraw();
 
