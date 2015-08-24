@@ -7,6 +7,7 @@ FileNamer fileNamer;
 ArrayList<Wave> waves;
 
 PGraphics canvas;
+PShape crest;
 
 float diamondWidth;
 float diamondHeight;
@@ -21,6 +22,9 @@ void setup() {
   diamondWidth = 350;
   diamondHeight = 200;
   overlapAmount = 10;
+
+  crest = loadShape("assets/crest.svg");
+  crest.disableStyle();
 
   reset();
 }
@@ -41,6 +45,7 @@ void redraw() {
   canvas.background(0);
 
   canvas.stroke(#cdddff);
+  canvas.strokeWeight(2);
   canvas.fill(#444a91);
 
   Iterator<Wave> iter = waves.iterator();
@@ -52,11 +57,12 @@ void redraw() {
     canvas.popMatrix();
   }
   canvas.endDraw();
+
+  background(0);
+  image(canvas, 0, 0);
 }
 
 void draw() {
-  background(0);
-  image(canvas, 0, 0);
 }
 
 void generateWaves() {
@@ -96,9 +102,23 @@ float generateWave(float x) {
 }
 
 void drawWave(PGraphics g, int direction) {
+  float slope = 0.5;
   for (int i = 0; i < 30; i++) {
-    g.translate(direction * 10 + jitter(), 5 + jitter());
+    float x = i * 10;
+    float y = x * slope;
+    g.pushMatrix();
+    g.translate(direction * x + jitter(6), y + jitter(6));
     drawDiamond(g);
+    g.popMatrix();
+  }
+
+  if (random(1) < 0.7) {
+    int count = floor(random(2, 6));
+    for (int i = 0; i < count; i++) {
+      float x = (i + 1) * 25 + jitter(20);
+      float y = x * slope;
+      g.shape(crest, direction * x, y, direction * crest.width, crest.height);
+    }
   }
 }
 
@@ -111,8 +131,8 @@ void drawDiamond(PGraphics g) {
   g.popMatrix();
 }
 
-float jitter() {
-  return (random(1) - 0.5) * 6;
+float jitter(float x) {
+  return (random(1) - 0.5) * x;
 }
 
 boolean canPlaceDiamond(float x, float y) {
