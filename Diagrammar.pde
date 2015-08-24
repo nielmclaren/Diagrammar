@@ -49,9 +49,7 @@ void redraw() {
   canvas.background(0);
   canvas.image(background, 0, 0);
 
-  canvas.stroke(#cdddff);
   canvas.strokeWeight(2);
-  canvas.fill(#444a91);
 
   boolean umibozuDrawn = false;
 
@@ -59,6 +57,10 @@ void redraw() {
   while (iter.hasNext()) {
     Wave wave = iter.next();
     canvas.pushMatrix();
+
+    float depth = constrain(wave.point.y / height, 0, 1);
+    canvas.stroke(lerpColor(#999999, #cdddff, depth));
+    canvas.fill(lerpColor(#2a164b, #444a91, depth));
 
     canvas.translate(wave.point.x, wave.point.y);
     drawWave(canvas, wave.direction);
